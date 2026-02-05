@@ -39,6 +39,8 @@ interface AppState {
   logout: () => void;
   setYear: (year: number) => void;
   addSupplier: (supplier: Omit<Supplier, 'id' | 'ownerId'>) => void;
+  updateSupplier: (id: string, supplier: Partial<Omit<Supplier, 'id' | 'ownerId'>>) => void;
+  deleteSupplier: (id: string) => void;
   addPayment: (payment: Omit<Payment, 'id' | 'registrationDate' | 'isArchived'>) => void;
 }
 
@@ -65,6 +67,12 @@ export const useStore = create<AppState>((set) => ({
       id: Math.random().toString(36).substr(2, 9),
       ownerId: state.user?.id || 'guest'
     }]
+  })),
+  updateSupplier: (id, updatedFields) => set((state) => ({
+    suppliers: state.suppliers.map(s => s.id === id ? { ...s, ...updatedFields } : s)
+  })),
+  deleteSupplier: (id) => set((state) => ({
+    suppliers: state.suppliers.filter(s => s.id !== id)
   })),
   addPayment: (newPayment) => set((state) => ({
     payments: [...state.payments, {
