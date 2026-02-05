@@ -34,14 +34,17 @@ interface AppState {
   user: User | null;
   suppliers: Supplier[];
   payments: Payment[];
+  selectedYear: number;
   login: (user: User) => void;
   logout: () => void;
+  setYear: (year: number) => void;
   addSupplier: (supplier: Omit<Supplier, 'id' | 'ownerId'>) => void;
   addPayment: (payment: Omit<Payment, 'id' | 'registrationDate' | 'isArchived'>) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
-  user: null, // Start logged out
+  user: null,
+  selectedYear: 2026,
   suppliers: [
     { id: '1', name: 'Vivo', serviceName: 'Internet Fibra', isRecurring: true, dueDay: 10, ownerId: 'u1' },
     { id: '2', name: 'Sabesp', serviceName: 'Água e Esgoto', isRecurring: true, dueDay: 15, ownerId: 'u1' },
@@ -49,12 +52,13 @@ export const useStore = create<AppState>((set) => ({
     { id: '4', name: 'TechSolutions', serviceName: 'Manutenção PC', isRecurring: false, ownerId: 'u1' },
   ],
   payments: [
-    { id: 'p1', supplierId: '1', amount: 129.90, monthYear: 'jan26', status: 'paid', registrationDate: '2026-01-10T10:00:00Z', isArchived: false, pixKey: 'vivo@pix.com.br' },
-    { id: 'p2', supplierId: '2', amount: 85.50, monthYear: 'jan26', status: 'paid', registrationDate: '2026-01-15T14:30:00Z', isArchived: false, pixKey: 'contas@sabesp.sp.gov.br' },
-    { id: 'p3', supplierId: '3', amount: 210.00, monthYear: 'jan26', status: 'overdue', registrationDate: '2026-01-20T09:00:00Z', isArchived: false },
+    { id: 'p1', supplierId: '1', amount: 129.90, monthYear: 'jan26', status: 'paid', registrationDate: '2026-01-10T10:00:00Z', isArchived: false, pixKey: 'vivo@pix.com.br', dueDay: 10 },
+    { id: 'p2', supplierId: '2', amount: 85.50, monthYear: 'jan26', status: 'paid', registrationDate: '2026-01-15T14:30:00Z', isArchived: false, pixKey: 'contas@sabesp.sp.gov.br', dueDay: 15 },
+    { id: 'p3', supplierId: '1', amount: 129.90, monthYear: 'fev26', status: 'paid', registrationDate: '2026-02-10T10:00:00Z', isArchived: false, pixKey: 'vivo@pix.com.br', dueDay: 10 },
   ],
   login: (user) => set({ user }),
   logout: () => set({ user: null }),
+  setYear: (year) => set({ selectedYear: year }),
   addSupplier: (newSupplier) => set((state) => ({
     suppliers: [...state.suppliers, { 
       ...newSupplier, 

@@ -1,120 +1,198 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useStore } from "@/lib/store";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { ArrowUpRight, ArrowDownRight, Clock, CheckCircle2, AlertCircle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { useStore, Payment, Supplier } from "@/lib/store";
+import { useLocation } from "wouter";
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Archive, 
+  HelpCircle, 
+  CheckCircle2, 
+  FileText, 
+  Receipt 
+} from "lucide-react";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter 
+} from "@/components/ui/dialog";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+
+const MONTHS = [
+  { id: 'jan', label: 'jan' },
+  { id: 'fev', label: 'fev' },
+  { id: 'mar', label: 'mar' },
+  { id: 'abr', label: 'abr' },
+  { id: 'mai', label: 'mai' },
+  { id: 'jun', label: 'jun' },
+  { id: 'jul', label: 'jul' },
+  { id: 'ago', label: 'ago' },
+  { id: 'set', label: 'set' },
+  { id: 'out', label: 'out' },
+  { id: 'nov', label: 'nov' },
+  { id: 'dez', label: 'dez' },
+];
 
 export default function DashboardPage() {
-  const { payments, user } = useStore();
+  const { payments, suppliers, user, selectedYear, setYear } = useStore();
+  const [, setLocation] = useLocation();
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
 
-  const totalPaid = payments
-    .filter(p => p.status === 'paid')
-    .reduce((acc, curr) => acc + curr.amount, 0);
+  const currentYearSuffix = selectedYear.toString().slice(-2);
+  
+  const handleCellClick = (supplier: Supplier, monthId: string) => {
+    const monthYear = `${monthId}${currentYearSuffix}`;
+    const payment = payments.find(p => p.supplierId === supplier.id && p.monthYear === monthYear);
+    
+    if (payment) {
+      setSelectedPayment(payment);
+    } else if (supplier.isRecurring) {
+      setLocation(`/pagamentos/novo?supplierId=${supplier.id}&monthYear=${monthYear}`);
+    }
+  };
 
-  const totalPending = payments
-    .filter(p => p.status === 'pending')
-    .reduce((acc, curr) => acc + curr.amount, 0);
+  const getCellContent = (supplier: Supplier, monthId: string) => {
+    const monthYear = `${monthId}${currentYearSuffix}`;
+    const payment = payments.find(p => p.supplierId === supplier.id && p.monthYear === monthYear);
+    
+    if (payment) {
+      return (
+        <div className="w-full h-full flex items-center justify-center">
+          <CheckCircle2 className="w-5 h-5 text-emerald-500 fill-emerald-50" />
+        </div>
+      );
+    }
 
-  const totalOverdue = payments
-    .filter(p => p.status === 'overdue')
-    .reduce((acc, curr) => acc + curr.amount, 0);
+    if (supplier.isRecurring) {
+      return (
+        <div className="w-full h-full flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 font-bold border border-rose-100 hover:bg-rose-100 transition-colors">
+            ?
+          </div>
+        </div>
+      );
+    }
 
-  const recentPayments = [...payments]
-    .sort((a, b) => new Date(b.registrationDate).getTime() - new Date(a.registrationDate).getTime())
-    .slice(0, 5);
+    return null;
+  };
 
   const formatCurrency = (val: number) => 
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight font-heading">Status</h2>
-        <p className="text-muted-foreground">Resumo financeiro deste mês.</p>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight font-heading">Status</h2>
+          <p className="text-muted-foreground text-sm">Olá, {user?.name}</p>
+        </div>
+        <Button variant="outline" className="gap-2" disabled={selectedYear >= 2026}>
+          <Archive className="w-4 h-4" />
+          🗄️ Arquivar Ano
+        </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Pago</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalPaid)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              +20.1% em relação ao mês passado
-            </p>
-          </CardContent>
-        </Card>
+      <Card className="overflow-hidden border-none shadow-xl bg-card/50 backdrop-blur-sm">
+        <CardContent className="p-0">
+          <div className="bg-muted/30 p-4 border-b flex items-center justify-center gap-6">
+            <Button variant="ghost" size="icon" onClick={() => setYear(selectedYear - 1)}>
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+            <span className="text-xl font-bold font-heading">{selectedYear}</span>
+            <Button variant="ghost" size="icon" onClick={() => setYear(selectedYear + 1)}>
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+          </div>
 
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pendente</CardTitle>
-            <Clock className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalPending)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              3 pagamentos agendados
-            </p>
-          </CardContent>
-        </Card>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent border-b">
+                  <TableHead className="w-[200px] font-bold text-foreground">Fornecedor</TableHead>
+                  {MONTHS.map(m => (
+                    <TableHead key={m.id} className="text-center font-bold text-foreground min-w-[70px]">
+                      {m.label}{currentYearSuffix}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {suppliers.map((supplier) => (
+                  <TableRow key={supplier.id} className="hover:bg-muted/20">
+                    <TableCell className="font-medium">{supplier.name}</TableCell>
+                    {MONTHS.map(m => (
+                      <TableCell 
+                        key={m.id} 
+                        className="p-0 h-14 cursor-pointer border-l first:border-l-0"
+                        onClick={() => handleCellClick(supplier, m.id)}
+                      >
+                        {getCellContent(supplier, m.id)}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
-        <Card className="shadow-sm hover:shadow-md transition-shadow border-destructive/20 bg-destructive/5">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-destructive">Vencido</CardTitle>
-            <AlertCircle className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">{formatCurrency(totalOverdue)}</div>
-            <p className="text-xs text-destructive/80 mt-1">
-              Ação necessária
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="space-y-4">
-        <h3 className="text-xl font-semibold font-heading">Atividade Recente</h3>
-        <Card className="shadow-sm">
-          <CardContent className="p-0">
-            <div className="divide-y">
-              {recentPayments.map((payment) => (
-                <div key={payment.id} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      payment.status === 'paid' ? 'bg-emerald-100 text-emerald-700' :
-                      payment.status === 'overdue' ? 'bg-rose-100 text-rose-700' :
-                      'bg-amber-100 text-amber-700'
-                    }`}>
-                      {payment.status === 'paid' ? <CheckCircle2 className="w-5 h-5" /> : 
-                       payment.status === 'overdue' ? <AlertCircle className="w-5 h-5" /> :
-                       <Clock className="w-5 h-5" />}
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">Pagamento #{payment.id.slice(0, 4)}</p>
-                      <p className="text-xs text-muted-foreground capitalize">
-                        {format(new Date(payment.registrationDate), "d 'de' MMMM", { locale: ptBR })}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-sm">{formatCurrency(payment.amount)}</p>
-                    <Badge variant={
-                      payment.status === 'paid' ? 'default' : 
-                      payment.status === 'overdue' ? 'destructive' : 'outline'
-                    } className="text-[10px] h-5 px-1.5 uppercase tracking-wide">
-                      {payment.status === 'paid' ? 'Pago' : 
-                       payment.status === 'overdue' ? 'Vencido' : 'Pendente'}
-                    </Badge>
-                  </div>
+      <Dialog open={!!selectedPayment} onOpenChange={(open) => !open && setSelectedPayment(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold font-heading">Detalhes do Pagamento</DialogTitle>
+          </DialogHeader>
+          {selectedPayment && (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Valor:</p>
+                  <p className="font-bold text-lg">{formatCurrency(selectedPayment.amount)}</p>
                 </div>
-              ))}
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Data:</p>
+                  <p className="font-semibold">{new Date(selectedPayment.registrationDate).toLocaleDateString('pt-BR')}</p>
+                </div>
+                <div className="space-y-1 col-span-2">
+                  <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Chave Pix:</p>
+                  <p className="font-mono text-sm bg-muted p-2 rounded truncate">
+                    {selectedPayment.pixKey || "Não informada"}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Dia de Vencimento:</p>
+                  <p className="font-semibold">{selectedPayment.dueDay || "-"}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3 pt-4 border-t">
+                <Button variant="outline" className="gap-2" onClick={() => window.open(selectedPayment.fileUrl || '#', '_blank')}>
+                  <FileText className="w-4 h-4 text-primary" />
+                  Ver Fatura
+                </Button>
+                <Button variant="outline" className="gap-2" onClick={() => window.open(selectedPayment.fileUrl || '#', '_blank')}>
+                  <Receipt className="w-4 h-4 text-emerald-500" />
+                  Ver Comprovante
+                </Button>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+          <DialogFooter>
+            <Button className="w-full" onClick={() => setSelectedPayment(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
