@@ -1,0 +1,66 @@
+CONTINUING SEQUENTIAL BUILD - PROMPT 5 of 6:
+Integrate Resend email and add editing capabilities. Do NOT change existing registration flow.
+
+Implement automatic email sending and payment editing functionality.
+
+RESEND INTEGRATION:
+Configure Resend for email sending. Use environment variable RESEND_API_KEY (Agent will ask me to create free account at Resend.com and add the key).
+
+AUTOMATIC EMAIL SENDING:
+After registering payment, automatically send email with:
+
+Recipient: Configurable email (environment variable EMAIL_DESTINO)
+
+Subject: Comprovante [Supplier Name] [month/year]
+Example: "Comprovante Luz e Força jan26"
+
+Email body (HTML):
+---
+Comprovante de Pagamento Registrado
+
+Fornecedor: [Name]
+Serviço: [Service Name]
+Valor pago: R$ [amount]
+Mês referência: [month/year]
+Dia do vencimento: [day]
+Chave Pix: [key]
+Data de registro: [dd/mm/yyyy hh:mm]
+
+📄 Fatura: [Clickable link to file]
+✅ Comprovante: [Clickable link to file]
+
+---
+Enviado automaticamente pelo Sistema de Controle de Pagamentos
+---
+
+FILE LINKS:
+Generate public URLs (but with security token) of files saved in App Storage. Links must allow direct download.
+
+IF SENDING ERROR:
+Still save payment, but show warning: "⚠️ Pagamento salvo, mas email falhou. Verifique configuração do Resend."
+
+PAYMENT EDITING:
+In details modal (when clicking green cell on dashboard):
+- Add button "✏️ Editar"
+- Open form filled with current data
+- Allow editing: amount, month/year, due day, pix key
+- DO NOT allow changing supplier (create new record in that case)
+- Allow replacing files (invoice and receipt)
+- After saving: show "✅ Pagamento atualizado"
+- DO NOT resend email when editing (only when creating new)
+
+DELETE BUTTON:
+In details modal, add button "🗑️ Deletar Pagamento"
+- Confirmation: "Tem certeza? Isso vai deletar o registro e os arquivos."
+- After deleting: remove files from storage and record from database
+- Update dashboard (cell returns to previous state)
+
+ALL UI TEXT IN PORTUGUESE (PT-BR):
+- Email subject: "Comprovante [Fornecedor] [mes/ano]"
+- Email body labels: "Comprovante de Pagamento Registrado", "Fornecedor:", "Serviço:", "Valor pago:", "Mês referência:", "Dia do vencimento:", "Chave Pix:", "Data de registro:", "📄 Fatura:", "✅ Comprovante:"
+- Email footer: "Enviado automaticamente pelo Sistema de Controle de Pagamentos"
+- Modal buttons: "✏️ Editar", "🗑️ Deletar Pagamento", "Fechar"
+- Success messages: "✅ Pagamento atualizado"
+- Warning: "⚠️ Pagamento salvo, mas email falhou. Verifique configuração do Resend."
+- Confirmation: "Tem certeza? Isso vai deletar o registro e os arquivos."
+- Delete buttons: "Cancelar", "Confirmar"

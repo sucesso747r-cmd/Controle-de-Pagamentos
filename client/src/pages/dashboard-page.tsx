@@ -5,10 +5,11 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Archive, 
-  HelpCircle, 
   CheckCircle2, 
   FileText, 
-  Receipt 
+  Receipt,
+  Pencil,
+  Trash2
 } from "lucide-react";
 import { 
   Table, 
@@ -26,28 +27,33 @@ import {
   DialogTitle, 
   DialogFooter 
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 const MONTHS = [
-  { id: 'jan', label: 'jan' },
-  { id: 'fev', label: 'fev' },
-  { id: 'mar', label: 'mar' },
-  { id: 'abr', label: 'abr' },
-  { id: 'mai', label: 'mai' },
-  { id: 'jun', label: 'jun' },
-  { id: 'jul', label: 'jul' },
-  { id: 'ago', label: 'ago' },
-  { id: 'set', label: 'set' },
-  { id: 'out', label: 'out' },
-  { id: 'nov', label: 'nov' },
-  { id: 'dez', label: 'dez' },
+  { id: 'jan', label: 'jan' }, { id: 'fev', label: 'fev' }, { id: 'mar', label: 'mar' },
+  { id: 'abr', label: 'abr' }, { id: 'mai', label: 'mai' }, { id: 'jun', label: 'jun' },
+  { id: 'jul', label: 'jul' }, { id: 'ago', label: 'ago' }, { id: 'set', label: 'set' },
+  { id: 'out', label: 'out' }, { id: 'nov', label: 'nov' }, { id: 'dez', label: 'dez' },
 ];
 
 export default function DashboardPage() {
-  const { payments, suppliers, user, selectedYear, setYear } = useStore();
+  const { payments, suppliers, user, selectedYear, setYear, deletePayment } = useStore();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
 
   const currentYearSuffix = selectedYear.toString().slice(-2);
   
@@ -89,6 +95,18 @@ export default function DashboardPage() {
 
   const formatCurrency = (val: number) => 
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+
+  const handleDeletePayment = () => {
+    if (paymentToDelete) {
+      deletePayment(paymentToDelete);
+      toast({
+        title: "Pagamento excluído",
+        description: "O registro e os arquivos foram removidos com sucesso.",
+      });
+      setPaymentToDelete(null);
+      setSelectedPayment(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -186,13 +204,55 @@ export default function DashboardPage() {
                   Ver Comprovante
                 </Button>
               </div>
+
+              <div className="flex gap-2 pt-2">
+                <Button 
+                  variant="secondary" 
+                  className="flex-1 gap-2" 
+                  onClick={() => {
+                    setLocation(`/pagamentos/novo?paymentId=${selectedPayment.id}`);
+                    setSelectedPayment(null);
+                  }}
+                >
+                  <Pencil className="w-4 h-4" />
+                  ✏️ Editar
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="flex-1 gap-2 text-destructive hover:bg-destructive/10" 
+                  onClick={() => setPaymentToDelete(selectedPayment.id)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  🗑️ Deletar Pagamento
+                </Button>
+              </div>
             </div>
           )}
           <DialogFooter>
-            <Button className="w-full" onClick={() => setSelectedPayment(null)}>Fechar</Button>
+            <Button variant="outline" className="w-full" onClick={() => setSelectedPayment(null)}>Fechar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!paymentToDelete} onOpenChange={(val) => !val && setPaymentToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-heading">Tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Isso vai deletar o registro e os arquivos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeletePayment}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

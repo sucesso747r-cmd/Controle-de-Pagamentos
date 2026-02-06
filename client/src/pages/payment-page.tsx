@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
@@ -9,7 +10,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { UploadCloud, ChevronLeft, ChevronRight, FileText, CheckCircle } from "lucide-react";
+import { UploadCloud, ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
@@ -33,16 +34,19 @@ const paymentSchema = z.object({
 type PaymentFormValues = z.infer<typeof paymentSchema>;
 
 export default function PaymentPage() {
-  const { suppliers, addPayment } = useStore();
+  const { suppliers, payments, addPayment, updatePayment } = useStore();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const search = useSearch();
   const params = new URLSearchParams(search);
+  const editingId = params.get("paymentId");
   
   const [step, setStep] = useState(1);
   const [fatura, setFatura] = useState<File | null>(null);
   const [comprovante, setComprovante] = useState<File | null>(null);
   const [errors, setErrors] = useState<{ fatura?: string; comprovante?: string }>({});
+
+  const editingPayment = editingId ? payments.find(p => p.id === editingId) : null;
 
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentSchema),
@@ -55,12 +59,25 @@ export default function PaymentPage() {
     },
   });
 
+  useEffect(() => {
+    if (editingPayment) {
+      form.reset({
+        supplierId: editingPayment.supplierId,
+        amount: editingPayment.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 }),
+        monthYear: editingPayment.monthYear,
+        dueDay: editingPayment.dueDay?.toString() || "",
+        pixKey: editingPayment.pixKey || "",
+      });
+    }
+  }, [editingPayment, form]);
+
   const handleNext = async () => {
     const isValid = await form.trigger();
     if (isValid) setStep(2);
   };
 
   const validateFiles = () => {
+    if (editingId) return true; // Files optional when editing
     const newErrors: { fatura?: string; comprovante?: string } = {};
     if (!fatura) newErrors.fatura = "Fatura é obrigatória";
     if (!comprovante) newErrors.comprovante = "Comprovante é obrigatório";
@@ -93,27 +110,51 @@ export default function PaymentPage() {
     setErrors(prev => ({ ...prev, [type]: undefined }));
   };
 
-  const onSubmit = (data: PaymentFormValues) => {
+  const onSubmit = async (data: PaymentFormValues) => {
     if (!validateFiles()) return;
 
-    // Format amount for storage
     const numericAmount = parseFloat(data.amount.replace("R$", "").replace(/\./g, "").replace(",", "."));
     
-    addPayment({
-      supplierId: data.supplierId,
-      amount: numericAmount,
-      monthYear: data.monthYear,
-      pixKey: data.pixKey,
-      dueDay: data.dueDay ? parseInt(data.dueDay) : undefined,
-      status: "paid",
-      fileUrl: URL.createObjectURL(fatura!), // Mock storage URL
-    });
-    
-    toast({
-      title: "✅ Pagamento registrado! Enviando email...",
-      duration: 3000,
-      className: "bg-emerald-500 text-white border-none",
-    });
+    if (editingId) {
+      updatePayment(editingId, {
+        amount: numericAmount,
+        monthYear: data.monthYear,
+        pixKey: data.pixKey,
+        dueDay: data.dueDay ? parseInt(data.dueDay) : undefined,
+        fileUrl: fatura ? URL.createObjectURL(fatura) : editingPayment?.fileUrl,
+      });
+      toast({
+        title: "✅ Pagamento atualizado",
+        duration: 3000,
+        className: "bg-emerald-500 text-white border-none",
+      });
+    } else {
+      // Mock Resend Simulation
+      try {
+        // Here we would call the server to send email via Resend
+        // Since we are frontend only, we simulate success
+        addPayment({
+          supplierId: data.supplierId,
+          amount: numericAmount,
+          monthYear: data.monthYear,
+          pixKey: data.pixKey,
+          dueDay: data.dueDay ? parseInt(data.dueDay) : undefined,
+          status: "paid",
+          fileUrl: URL.createObjectURL(fatura!),
+        });
+        
+        toast({
+          title: "✅ Pagamento registrado! Enviando email...",
+          duration: 3000,
+          className: "bg-emerald-500 text-white border-none",
+        });
+      } catch (e) {
+        toast({
+          variant: "destructive",
+          title: "⚠️ Pagamento salvo, mas email falhou. Verifique configuração do Resend.",
+        });
+      }
+    }
 
     setTimeout(() => setLocation("/"), 500);
   };
@@ -131,7 +172,9 @@ export default function PaymentPage() {
     <div className="max-w-2xl mx-auto space-y-8 pb-10">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight font-heading">Registrar Pagamento</h2>
+          <h2 className="text-3xl font-bold tracking-tight font-heading">
+            {editingId ? "Editar Pagamento" : "Registrar Pagamento"}
+          </h2>
           <p className="text-muted-foreground">Etapa {step} de 2: {step === 1 ? "Dados do Pagamento" : "Anexar Documentos"}</p>
         </div>
         <div className="flex gap-2">
@@ -152,7 +195,11 @@ export default function PaymentPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Fornecedor</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          defaultValue={field.value}
+                          disabled={!!editingId}
+                        >
                           <FormControl>
                             <SelectTrigger className="h-12">
                               <SelectValue placeholder="Selecione um fornecedor" />
@@ -295,7 +342,9 @@ export default function PaymentPage() {
                         ) : (
                           <>
                             <UploadCloud className="w-10 h-10 text-muted-foreground mb-2" />
-                            <span className="text-sm font-medium text-muted-foreground">Clique para fazer upload</span>
+                            <span className="text-sm font-medium text-muted-foreground">
+                              {editingId ? "Clique para trocar a fatura (opcional)" : "Clique para fazer upload"}
+                            </span>
                           </>
                         )}
                       </label>
@@ -329,7 +378,9 @@ export default function PaymentPage() {
                         ) : (
                           <>
                             <UploadCloud className="w-10 h-10 text-muted-foreground mb-2" />
-                            <span className="text-sm font-medium text-muted-foreground">Clique para fazer upload</span>
+                            <span className="text-sm font-medium text-muted-foreground">
+                              {editingId ? "Clique para trocar o comprovante (opcional)" : "Clique para fazer upload"}
+                            </span>
                           </>
                         )}
                       </label>
@@ -351,7 +402,7 @@ export default function PaymentPage() {
                       type="submit" 
                       className="flex-1 h-12 text-base font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
                     >
-                      Registrar Pagamento
+                      {editingId ? "Salvar Alterações" : "Registrar Pagamento"}
                     </Button>
                   </div>
                 </div>

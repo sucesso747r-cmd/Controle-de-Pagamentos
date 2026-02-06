@@ -42,6 +42,8 @@ interface AppState {
   updateSupplier: (id: string, supplier: Partial<Omit<Supplier, 'id' | 'ownerId'>>) => void;
   deleteSupplier: (id: string) => void;
   addPayment: (payment: Omit<Payment, 'id' | 'registrationDate' | 'isArchived'>) => void;
+  updatePayment: (id: string, payment: Partial<Payment>) => void;
+  deletePayment: (id: string) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -81,5 +83,11 @@ export const useStore = create<AppState>((set) => ({
       registrationDate: new Date().toISOString(),
       isArchived: false,
     }]
+  })),
+  updatePayment: (id, updatedFields) => set((state) => ({
+    payments: state.payments.map(p => p.id === id ? { ...p, ...updatedFields } : p)
+  })),
+  deletePayment: (id) => set((state) => ({
+    payments: state.payments.filter(p => p.id !== id)
   })),
 }));
