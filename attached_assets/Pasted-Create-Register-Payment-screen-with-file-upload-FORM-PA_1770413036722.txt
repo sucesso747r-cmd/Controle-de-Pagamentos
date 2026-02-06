@@ -1,0 +1,62 @@
+Create Register Payment screen with file upload.
+
+FORM - PART 1 (Data):
+Fields:
+1. Dropdown: Select supplier (list of all registered)
+2. Text field: Amount paid (format: R$ 0,00 - accept comma or period)
+3. Dropdown: Month/Year (format: jan26, fev26... dez26)
+4. Number field: Due day (1 to 31)
+5. Text field: Pix key used (accept email, CPF, CNPJ, phone, random key)
+
+VALIDATIONS PART 1:
+- Supplier: required
+- Amount: required, positive number, display formatted as R$ 150,00
+- Month/year: required
+- Due day: optional, if filled must be number between 1 and 31
+- Pix key: required, minimum 10 characters
+
+If validation fails: show error message in red below field.
+
+BUTTON: "Próximo: Anexar Documentos"
+
+FORM - PART 2 (Upload):
+After clicking "Próximo", show:
+
+1. File upload: "📄 Selecionar Fatura (PDF ou JPG)"
+   - Accept: .pdf, .jpg, .jpeg, .png
+   - Max size: 10MB
+   - Show preview of selected file name
+
+2. File upload: "✅ Selecionar Comprovante (JPG)"
+   - Accept: .jpg, .jpeg, .png
+   - Max size: 10MB
+   - Show preview of selected file name
+
+VALIDATIONS PART 2:
+- Both files required
+- If file too large: "Arquivo maior que 10MB. Selecione outro."
+- If invalid format: "Formato não aceito. Use PDF ou JPG."
+
+BUTTONS:
+- "← Voltar" (go back to part 1)
+- "Registrar Pagamento" (green, highlighted)
+
+AFTER REGISTERING:
+Save files to Replit App Storage with names:
+- [supplier]_[month-year]_fatura.[ext]
+- [supplier]_[month-year]_comprovante.[ext]
+
+Save record to database with all information + file URLs.
+
+Show success message: "✅ Pagamento registrado! Enviando email..." for 3 seconds.
+
+Redirect to Dashboard.
+
+ALL UI TEXT IN PORTUGUESE (PT-BR):
+- Page title: "Registrar Pagamento"
+- Form labels: "Fornecedor", "Valor pago", "Mês/Ano", "Dia do vencimento", "Chave Pix"
+- Upload labels: "📄 Selecionar Fatura (PDF ou JPG)", "✅ Selecionar Comprovante (JPG)"
+- Buttons: "Próximo: Anexar Documentos", "← Voltar", "Registrar Pagamento"
+- Error messages: "Arquivo maior que 10MB. Selecione outro.", "Formato não aceito. Use PDF ou JPG."
+- Success message: "✅ Pagamento registrado! Enviando email..."
+- Placeholders: "Selecione um fornecedor", "R$ 0,00", "Digite a chave Pix"
