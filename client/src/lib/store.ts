@@ -44,6 +44,7 @@ interface AppState {
   addPayment: (payment: Omit<Payment, 'id' | 'registrationDate' | 'isArchived'>) => void;
   updatePayment: (id: string, payment: Partial<Payment>) => void;
   deletePayment: (id: string) => void;
+  archiveYear: (year: number) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -89,5 +90,12 @@ export const useStore = create<AppState>((set) => ({
   })),
   deletePayment: (id) => set((state) => ({
     payments: state.payments.filter(p => p.id !== id)
+  })),
+  archiveYear: (year) => set((state) => ({
+    payments: state.payments.map(p => 
+      p.monthYear.endsWith(year.toString().slice(-2)) 
+        ? { ...p, isArchived: true, fileUrl: undefined } 
+        : p
+    )
   })),
 }));

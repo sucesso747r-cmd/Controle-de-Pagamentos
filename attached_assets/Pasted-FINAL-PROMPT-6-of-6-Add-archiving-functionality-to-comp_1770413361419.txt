@@ -1,0 +1,111 @@
+FINAL PROMPT - 6 of 6:
+Add archiving functionality to complete the app. This is the final feature addition.
+
+
+Implement Annual Archiving functionality with test mode for MVP.
+
+TWO BUTTONS ON DASHBOARD:
+
+1) TEST button (always visible):
+"🧪 Testar Arquivamento (últimos 2 meses)"
+- Orange badge: "MODO TESTE"
+- Always enabled if there are payments in at least 2 different months
+- Only for validating functionality before using at year end
+
+2) REAL button (conditional):
+"🗄️ Arquivar Ano [2026]"
+- Visible only if we're already in January of next year OR year being viewed is prior to current
+- If year not finished yet: button disabled with tooltip "Disponível apenas no fim do ano"
+
+TEST MODE - WHEN CLICKING "🧪 Testar Arquivamento":
+
+Show modal:
+---
+🧪 Modo de Teste - Arquivamento
+
+Isso vai gerar um arquivo ZIP de TESTE contendo apenas os últimos 2 meses com pagamentos registrados.
+
+⚠️ IMPORTANTE: 
+- Arquivos NÃO serão deletados do sistema
+- Use apenas para validar se a funcionalidade funciona
+- No fim do ano real, use o botão "Arquivar Ano"
+
+[Cancelar] [Gerar ZIP de Teste]
+---
+
+When confirming:
+1. Identify the 2 most recent months with payments
+2. Generate ZIP: teste_arquivamento_[date].zip containing:
+   - Excel with data from these 2 months
+   - Invoices and receipts only from these 2 months
+3. Start download
+4. DO NOT delete anything from system
+5. Message: "✅ ZIP de teste gerado! Arquivos mantidos no sistema."
+
+REAL MODE - WHEN CLICKING "🗄️ Arquivar Ano [2026]":
+
+Show modal:
+---
+Arquivar Ano 2026?
+
+Isso vai:
+✅ Gerar arquivo historico_2026.zip contendo:
+  - Planilha Excel com todos 12 meses
+  - Todas faturas (PDFs/JPGs)
+  - Todos comprovantes (JPGs)
+
+⚠️ Após download e confirmação, os arquivos serão REMOVIDOS do sistema
+(Dados dos pagamentos continuam visíveis, mas sem arquivos anexados)
+
+[Cancelar] [Gerar e Baixar Arquivo]
+---
+
+REAL ARCHIVING PROCESS:
+1. Show loading: "⏳ Gerando arquivo... Isso pode levar alguns segundos"
+
+2. Generate ZIP file containing:
+   - Excel file: status_2026.xlsx (complete 12-month table)
+   - Folder /faturas_2026/ with all invoice PDFs/JPGs
+   - Folder /comprovantes_2026/ with all receipt JPGs
+
+3. Start automatic download of ZIP
+
+4. After download starts, show modal:
+---
+✅ Arquivo gerado com sucesso!
+📥 Download iniciado (verificar pasta Downloads)
+
+⚠️ IMPORTANTE:
+Salve este arquivo em local seguro (nuvem pessoal, HD externo, etc)
+
+O arquivo historico_2026.zip contém TUDO do ano 2026.
+
+[Download não iniciou? Clique aqui para baixar novamente]
+
+[❌ Cancelar] [✅ Confirmar: Baixei o Arquivo]
+---
+
+5. When clicking "Confirmar: Baixei o Arquivo":
+   - Delete ALL 2026 files from App Storage
+   - Mark 2026 records as "arquivado: true" in database
+   - Show success: "✅ Ano 2026 arquivado! Storage liberado."
+   - Update dashboard (2026 payments without file links)
+
+POST-ARCHIVING VISUALIZATION:
+When user views archived year:
+- Green cells normally
+- Details modal shows data including due day, BUT:
+  - Invoice/receipt links disabled
+  - Message: "📦 Arquivos arquivados. Consulte historico_2026.zip"
+- Cannot edit or delete anymore (only view data)
+
+ALL UI TEXT IN PORTUGUESE (PT-BR):
+- Buttons: "🧪 Testar Arquivamento (últimos 2 meses)", "🗄️ Arquivar Ano [2026]"
+- Badge: "MODO TESTE"
+- Tooltip: "Disponível apenas no fim do ano"
+- Modal titles: "🧪 Modo de Teste - Arquivamento", "Arquivar Ano 2026?"
+- Modal content: All text shown above in Portuguese
+- Buttons: "Cancelar", "Gerar ZIP de Teste", "Gerar e Baixar Arquivo", "Confirmar: Baixei o Arquivo"
+- Messages: "✅ ZIP de teste gerado! Arquivos mantidos no sistema.", "⏳ Gerando arquivo... Isso pode levar alguns segundos", "✅ Arquivo gerado com sucesso!", "✅ Ano 2026 arquivado! Storage liberado."
+- Link text: "Download não iniciou? Clique aqui para baixar novamente"
+- Archived message: "📦 Arquivos arquivados. Consulte historico_2026.zip"
