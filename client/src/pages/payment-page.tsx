@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, useSearch } from "wouter";
@@ -10,7 +11,17 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { UploadCloud, ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { UploadCloud, ChevronLeft, ChevronRight, CheckCircle, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
@@ -44,9 +55,13 @@ export default function PaymentPage() {
   const [step, setStep] = useState(1);
   const [fatura, setFatura] = useState<File | null>(null);
   const [comprovante, setComprovante] = useState<File | null>(null);
+  const [keepFatura, setKeepFatura] = useState(true);
+  const [keepComprovante, setKeepComprovante] = useState(true);
   const [errors, setErrors] = useState<{ fatura?: string; comprovante?: string }>({});
+  const [showCancelAlert, setShowCancelAlert] = useState(false);
 
   const editingPayment = editingId ? payments.find(p => p.id === editingId) : null;
+  const supplier = suppliers.find(s => s.id === (editingPayment?.supplierId || params.get("supplierId")));
 
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentSchema),
@@ -77,10 +92,16 @@ export default function PaymentPage() {
   };
 
   const validateFiles = () => {
-    if (editingId) return true; // Files optional when editing
     const newErrors: { fatura?: string; comprovante?: string } = {};
-    if (!fatura) newErrors.fatura = "Fatura é obrigatória";
-    if (!comprovante) newErrors.comprovante = "Comprovante é obrigatório";
+    
+    if (editingId) {
+      if (!keepFatura && !fatura) newErrors.fatura = "Fatura é obrigatória para substituição";
+      if (!keepComprovante && !comprovante) newErrors.comprovante = "Comprovante é obrigatório para substituição";
+    } else {
+      if (!fatura) newErrors.fatura = "Fatura é obrigatória";
+      if (!comprovante) newErrors.comprovante = "Comprovante é obrigatório";
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -104,8 +125,13 @@ export default function PaymentPage() {
       return;
     }
 
-    if (type === 'fatura') setFatura(file);
-    else setComprovante(file);
+    if (type === 'fatura') {
+      setFatura(file);
+      setKeepFatura(false);
+    } else {
+      setComprovante(file);
+      setKeepComprovante(false);
+    }
     
     setErrors(prev => ({ ...prev, [type]: undefined }));
   };
@@ -121,7 +147,8 @@ export default function PaymentPage() {
         monthYear: data.monthYear,
         pixKey: data.pixKey,
         dueDay: data.dueDay ? parseInt(data.dueDay) : undefined,
-        fileUrl: fatura ? URL.createObjectURL(fatura) : editingPayment?.fileUrl,
+        fileUrl: keepFatura ? editingPayment?.fileUrl : (fatura ? URL.createObjectURL(fatura) : undefined),
+        receiptUrl: keepComprovante ? editingPayment?.receiptUrl : (comprovante ? URL.createObjectURL(comprovante) : undefined),
       });
       toast({
         title: "✅ Pagamento atualizado",
@@ -129,34 +156,33 @@ export default function PaymentPage() {
         className: "bg-emerald-500 text-white border-none",
       });
     } else {
-      // Mock Resend Simulation
-      try {
-        // Here we would call the server to send email via Resend
-        // Since we are frontend only, we simulate success
-        addPayment({
-          supplierId: data.supplierId,
-          amount: numericAmount,
-          monthYear: data.monthYear,
-          pixKey: data.pixKey,
-          dueDay: data.dueDay ? parseInt(data.dueDay) : undefined,
-          status: "paid",
-          fileUrl: URL.createObjectURL(fatura!),
-        });
-        
-        toast({
-          title: "✅ Pagamento registrado! Enviando email...",
-          duration: 3000,
-          className: "bg-emerald-500 text-white border-none",
-        });
-      } catch (e) {
-        toast({
-          variant: "destructive",
-          title: "⚠️ Pagamento salvo, mas email falhou. Verifique configuração do Resend.",
-        });
-      }
+      addPayment({
+        supplierId: data.supplierId,
+        amount: numericAmount,
+        monthYear: data.monthYear,
+        pixKey: data.pixKey,
+        dueDay: data.dueDay ? parseInt(data.dueDay) : undefined,
+        status: "paid",
+        fileUrl: URL.createObjectURL(fatura!),
+        receiptUrl: URL.createObjectURL(comprovante!),
+      });
+      
+      toast({
+        title: "✅ Pagamento registrado! Enviando email...",
+        duration: 3000,
+        className: "bg-emerald-500 text-white border-none",
+      });
     }
 
     setTimeout(() => setLocation("/"), 500);
+  };
+
+  const handleCancel = () => {
+    if (form.getValues("amount") || fatura || comprovante) {
+      setShowCancelAlert(true);
+    } else {
+      setLocation("/");
+    }
   };
 
   const formatCurrency = (value: string) => {
@@ -183,6 +209,10 @@ export default function PaymentPage() {
         </div>
       </div>
 
+      <div className="bg-muted/30 p-4 rounded-lg text-sm mb-6">
+        <p className="text-muted-foreground"><span className="text-destructive font-bold">*</span> Campos obrigatórios</p>
+      </div>
+
       <Card className="border-none shadow-xl bg-card/50 backdrop-blur-sm">
         <CardContent className="pt-6">
           <Form {...form}>
@@ -194,25 +224,28 @@ export default function PaymentPage() {
                     name="supplierId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Fornecedor</FormLabel>
-                        <Select 
-                          onValueChange={field.onChange} 
-                          defaultValue={field.value}
-                          disabled={!!editingId}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="h-12">
-                              <SelectValue placeholder="Selecione um fornecedor" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {suppliers.map((s) => (
-                              <SelectItem key={s.id} value={s.id}>
-                                {s.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormLabel>Fornecedor <span className="text-destructive">*</span></FormLabel>
+                        {editingId ? (
+                          <div className="space-y-2">
+                            <Input value={supplier?.name || ""} disabled className="h-12 bg-muted/50" />
+                            <p className="text-xs text-muted-foreground italic">(não editável - para mudar fornecedor, crie novo pagamento)</p>
+                          </div>
+                        ) : (
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="h-12">
+                                <SelectValue placeholder="Selecione um fornecedor" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {suppliers.map((s) => (
+                                <SelectItem key={s.id} value={s.id}>
+                                  {s.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
                         <FormMessage className="text-destructive font-medium" />
                       </FormItem>
                     )}
@@ -224,7 +257,7 @@ export default function PaymentPage() {
                       name="amount"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Valor pago</FormLabel>
+                          <FormLabel>Valor pago <span className="text-destructive">*</span></FormLabel>
                           <FormControl>
                             <Input 
                               className="h-12"
@@ -243,7 +276,7 @@ export default function PaymentPage() {
                       name="monthYear"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Mês/Ano</FormLabel>
+                          <FormLabel>Mês/Ano <span className="text-destructive">*</span></FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger className="h-12">
@@ -291,7 +324,7 @@ export default function PaymentPage() {
                       name="pixKey"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Chave Pix</FormLabel>
+                          <FormLabel>Chave Pix <span className="text-destructive">*</span></FormLabel>
                           <FormControl>
                             <Input 
                               className="h-12"
@@ -305,87 +338,137 @@ export default function PaymentPage() {
                     />
                   </div>
 
-                  <Button 
-                    type="button" 
-                    className="w-full h-12 text-base font-bold gap-2 mt-4" 
-                    onClick={handleNext}
-                  >
-                    Próximo: Anexar Documentos
-                    <ChevronRight className="w-5 h-5" />
-                  </Button>
+                  <div className="flex gap-4 mt-4">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="h-12 px-6"
+                      onClick={handleCancel}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button 
+                      type="button" 
+                      className="flex-1 h-12 text-base font-bold gap-2" 
+                      onClick={handleNext}
+                    >
+                      Próximo: Anexar Documentos
+                      <ChevronRight className="w-5 h-5" />
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-300">
                   <div className="space-y-4">
-                    <Label className="text-base font-semibold">📄 Selecionar Fatura (PDF ou JPG)</Label>
-                    <div className="relative">
-                      <input
-                        type="file"
-                        id="fatura-upload"
-                        className="hidden"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={(e) => handleFileChange(e, 'fatura')}
-                      />
-                      <label
-                        htmlFor="fatura-upload"
-                        className={cn(
-                          "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all",
-                          fatura ? "bg-emerald-50 border-emerald-200" : "bg-muted/30 border-muted hover:bg-muted/50",
-                          errors.fatura && "border-destructive bg-destructive/5"
-                        )}
+                    <Label className="text-base font-semibold">Fatura <span className="text-destructive">*</span> (PDF ou JPG)</Label>
+                    
+                    {editingId && editingPayment?.fileUrl && (
+                      <RadioGroup 
+                        defaultValue="keep" 
+                        onValueChange={(val) => setKeepFatura(val === "keep")}
+                        className="flex flex-col space-y-2 mb-4"
                       >
-                        {fatura ? (
-                          <div className="flex flex-col items-center gap-2">
-                            <CheckCircle className="w-8 h-8 text-emerald-500" />
-                            <span className="text-sm font-medium text-emerald-700">{fatura.name}</span>
-                          </div>
-                        ) : (
-                          <>
-                            <UploadCloud className="w-10 h-10 text-muted-foreground mb-2" />
-                            <span className="text-sm font-medium text-muted-foreground">
-                              {editingId ? "Clique para trocar a fatura (opcional)" : "Clique para fazer upload"}
-                            </span>
-                          </>
-                        )}
-                      </label>
-                      {errors.fatura && <p className="text-xs text-destructive mt-1 font-medium">{errors.fatura}</p>}
-                    </div>
+                        <div className="flex items-center space-x-2 bg-muted/20 p-2 rounded-lg border">
+                          <RadioGroupItem value="keep" id="keep-fatura" />
+                          <Label htmlFor="keep-fatura" className="flex items-center gap-2 cursor-pointer">
+                            Manter arquivo atual: <span className="text-xs font-mono truncate max-w-[150px]">{editingPayment.fileUrl}</span>
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2 bg-muted/20 p-2 rounded-lg border">
+                          <RadioGroupItem value="replace" id="replace-fatura" />
+                          <Label htmlFor="replace-fatura" className="cursor-pointer">Substituir arquivo</Label>
+                        </div>
+                      </RadioGroup>
+                    )}
+
+                    {(!editingId || !keepFatura) && (
+                      <div className="relative">
+                        <input
+                          type="file"
+                          id="fatura-upload"
+                          className="hidden"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => handleFileChange(e, 'fatura')}
+                        />
+                        <label
+                          htmlFor="fatura-upload"
+                          className={cn(
+                            "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all",
+                            fatura ? "bg-emerald-50 border-emerald-200" : "bg-muted/30 border-muted hover:bg-muted/50",
+                            errors.fatura && "border-destructive bg-destructive/5"
+                          )}
+                        >
+                          {fatura ? (
+                            <div className="flex flex-col items-center gap-2">
+                              <CheckCircle className="w-8 h-8 text-emerald-500" />
+                              <span className="text-sm font-medium text-emerald-700">{fatura.name}</span>
+                            </div>
+                          ) : (
+                            <>
+                              <UploadCloud className="w-10 h-10 text-muted-foreground mb-2" />
+                              <span className="text-sm font-medium text-muted-foreground">Clique para fazer upload</span>
+                            </>
+                          )}
+                        </label>
+                        {errors.fatura && <p className="text-xs text-destructive mt-1 font-medium">{errors.fatura}</p>}
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-4">
-                    <Label className="text-base font-semibold">✅ Selecionar Comprovante (JPG)</Label>
-                    <div className="relative">
-                      <input
-                        type="file"
-                        id="comprovante-upload"
-                        className="hidden"
-                        accept=".jpg,.jpeg,.png"
-                        onChange={(e) => handleFileChange(e, 'comprovante')}
-                      />
-                      <label
-                        htmlFor="comprovante-upload"
-                        className={cn(
-                          "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all",
-                          comprovante ? "bg-emerald-50 border-emerald-200" : "bg-muted/30 border-muted hover:bg-muted/50",
-                          errors.comprovante && "border-destructive bg-destructive/5"
-                        )}
+                    <Label className="text-base font-semibold">Comprovante <span className="text-destructive">*</span> (JPG)</Label>
+                    
+                    {editingId && editingPayment?.receiptUrl && (
+                      <RadioGroup 
+                        defaultValue="keep" 
+                        onValueChange={(val) => setKeepComprovante(val === "keep")}
+                        className="flex flex-col space-y-2 mb-4"
                       >
-                        {comprovante ? (
-                          <div className="flex flex-col items-center gap-2">
-                            <CheckCircle className="w-8 h-8 text-emerald-500" />
-                            <span className="text-sm font-medium text-emerald-700">{comprovante.name}</span>
-                          </div>
-                        ) : (
-                          <>
-                            <UploadCloud className="w-10 h-10 text-muted-foreground mb-2" />
-                            <span className="text-sm font-medium text-muted-foreground">
-                              {editingId ? "Clique para trocar o comprovante (opcional)" : "Clique para fazer upload"}
-                            </span>
-                          </>
-                        )}
-                      </label>
-                      {errors.comprovante && <p className="text-xs text-destructive mt-1 font-medium">{errors.comprovante}</p>}
-                    </div>
+                        <div className="flex items-center space-x-2 bg-muted/20 p-2 rounded-lg border">
+                          <RadioGroupItem value="keep" id="keep-comprovante" />
+                          <Label htmlFor="keep-comprovante" className="flex items-center gap-2 cursor-pointer">
+                            Manter arquivo atual: <span className="text-xs font-mono truncate max-w-[150px]">{editingPayment.receiptUrl}</span>
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2 bg-muted/20 p-2 rounded-lg border">
+                          <RadioGroupItem value="replace" id="replace-comprovante" />
+                          <Label htmlFor="replace-comprovante" className="cursor-pointer">Substituir arquivo</Label>
+                        </div>
+                      </RadioGroup>
+                    )}
+
+                    {(!editingId || !keepComprovante) && (
+                      <div className="relative">
+                        <input
+                          type="file"
+                          id="comprovante-upload"
+                          className="hidden"
+                          accept=".jpg,.jpeg,.png"
+                          onChange={(e) => handleFileChange(e, 'comprovante')}
+                        />
+                        <label
+                          htmlFor="comprovante-upload"
+                          className={cn(
+                            "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all",
+                            comprovante ? "bg-emerald-50 border-emerald-200" : "bg-muted/30 border-muted hover:bg-muted/50",
+                            errors.comprovante && "border-destructive bg-destructive/5"
+                          )}
+                        >
+                          {comprovante ? (
+                            <div className="flex flex-col items-center gap-2">
+                              <CheckCircle className="w-8 h-8 text-emerald-500" />
+                              <span className="text-sm font-medium text-emerald-700">{comprovante.name}</span>
+                            </div>
+                          ) : (
+                            <>
+                              <UploadCloud className="w-10 h-10 text-muted-foreground mb-2" />
+                              <span className="text-sm font-medium text-muted-foreground">Clique para fazer upload</span>
+                            </>
+                          )}
+                        </label>
+                        {errors.comprovante && <p className="text-xs text-destructive mt-1 font-medium">{errors.comprovante}</p>}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-4 pt-4">
@@ -411,6 +494,23 @@ export default function PaymentPage() {
           </Form>
         </CardContent>
       </Card>
+
+      <AlertDialog open={showCancelAlert} onOpenChange={setShowCancelAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Descartar alterações?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você fez alterações que não foram salvas. Tem certeza que deseja sair?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Continuar editando</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setLocation("/")} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Sim, descartar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

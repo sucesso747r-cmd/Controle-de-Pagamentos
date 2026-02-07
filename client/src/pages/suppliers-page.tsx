@@ -150,6 +150,11 @@ export default function SuppliersPage() {
               Preencha os dados do fornecedor abaixo.
             </DialogDescription>
           </DialogHeader>
+          
+          <div className="bg-muted/30 p-3 rounded-lg text-xs mb-2">
+            <p className="text-muted-foreground"><span className="text-destructive font-bold">*</span> Campos obrigatórios</p>
+          </div>
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -157,11 +162,11 @@ export default function SuppliersPage() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome do fornecedor</FormLabel>
+                    <FormLabel>Nome do fornecedor <span className="text-destructive font-bold">*</span></FormLabel>
                     <FormControl>
                       <Input placeholder="Ex: Vivo" {...field} />
                     </FormControl>
-                    <FormMessage className="text-destructive" />
+                    <FormMessage className="text-destructive font-medium" />
                   </FormItem>
                 )}
               />
@@ -170,11 +175,11 @@ export default function SuppliersPage() {
                 name="serviceName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome do serviço</FormLabel>
+                    <FormLabel>Nome do serviço <span className="text-destructive font-bold">*</span></FormLabel>
                     <FormControl>
                       <Input placeholder="Ex: Internet Fibra" {...field} />
                     </FormControl>
-                    <FormMessage className="text-destructive" />
+                    <FormMessage className="text-destructive font-medium" />
                   </FormItem>
                 )}
               />

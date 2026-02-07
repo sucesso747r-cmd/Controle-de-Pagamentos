@@ -1,0 +1,75 @@
+```
+BUG FIXES AND UX IMPROVEMENTS - 7 Issues to Resolve:
+
+CRITICAL BUG #1 - Wrong Attachment Display:
+In "Detalhes do Pagamento" modal, the "Ver Comprovante" button is showing the invoice file instead of the receipt file. Fix the data relationship to ensure:
+- "Ver Fatura" button opens the invoice file (fatura)
+- "Ver Comprovante" button opens the receipt file (comprovante)
+Verify the database query and file URL mapping is correct for both buttons.
+
+CRITICAL BUG #2 - Missing Attachments When Editing:
+In "Editar Pagamento" form, Part 2 (Anexar Documentos):
+- If invoice file already exists in database: show current filename and preview with option "Manter arquivo atual" OR "Substituir arquivo" (radio buttons or checkbox)
+- If receipt file already exists in database: show current filename and preview with same option
+- User should be able to:
+  * Keep both existing files (no upload needed)
+  * Replace only invoice (keep receipt)
+  * Replace only receipt (keep invoice)
+  * Replace both files
+- If user doesn't upload new file and chooses "Manter arquivo atual", keep the existing file URL in database unchanged
+
+UX IMPROVEMENT #1 - Show Supplier Name When Editing:
+In "Editar Pagamento" form, the "Fornecedor" dropdown should:
+- Display the current supplier name (not "Selecione um fornecedor")
+- Be disabled/readonly (non-editable)
+- Show clearly which supplier this payment belongs to
+- Add text below: "(não editável - para mudar fornecedor, crie novo pagamento)"
+
+UX IMPROVEMENT #2 - Required Field Indicators:
+Add red asterisk (*) to ALL required field labels throughout the entire application:
+- "Registrar Pagamento" form: Fornecedor*, Valor pago*, Mês/Ano*, Chave Pix*
+- "Gerenciar Fornecedores" form: Nome do fornecedor*, Nome do serviço*
+- File uploads in Part 2: Fatura*, Comprovante*
+- Asterisk should be red color (#dc3545)
+- Add legend at top of forms: "* Campos obrigatórios"
+
+UX IMPROVEMENT #3 - Cancel Button in Edit Mode:
+In "Editar Pagamento" form:
+- Add "Cancelar" button (gray/secondary style) next to "Salvar" button
+- When clicked: close modal/form without saving any changes
+- Show confirmation if user made changes: "Descartar alterações?" with buttons "Sim, descartar" and "Continuar editando"
+- If no changes made: close immediately without confirmation
+
+UX IMPROVEMENT #4 - Clickable Supplier Names:
+In Status Dashboard table:
+- Make supplier names in first column (Column A) clickable/interactive
+- When user clicks on supplier name: open "Editar Fornecedor" modal pre-filled with that supplier's data
+- Visual indication: supplier name should be underlined or change color on hover (cursor: pointer)
+- Tooltip on hover: "Clique para editar fornecedor"
+
+UX IMPROVEMENT #5 - Clickable Empty Cells for Non-Recurring Suppliers:
+In Status Dashboard table:
+- Currently: empty/gray cells for non-recurring suppliers are not clickable
+- Change to: make these empty cells clickable
+- When clicked: redirect to "Registrar Pagamento" screen with:
+  * Supplier pre-selected (from the row)
+  * Month pre-selected (from the column)
+  * User just needs to fill value, due day, pix key, and upload files
+- Visual indication on hover: light border or background color change (cursor: pointer)
+- Tooltip: "Clique para registrar pagamento"
+
+SUMMARY OF CHANGES:
+1. Fix "Ver Comprovante" button showing wrong file
+2. Show existing attachments when editing with option to keep or replace individually
+3. Display supplier name (readonly) in edit form
+4. Add red asterisk (*) to all required fields across app
+5. Add "Cancelar" button with confirmation in edit mode
+6. Make supplier names clickable to edit supplier
+7. Make empty cells clickable to register payment with pre-selection
+
+ALL UI TEXT IN PORTUGUESE (PT-BR):
+- New labels: "Manter arquivo atual", "Substituir arquivo", "* Campos obrigatórios", "(não editável - para mudar fornecedor, crie novo pagamento)"
+- Buttons: "Cancelar", "Sim, descartar", "Continuar editando"
+- Confirmation: "Descartar alterações?"
+- Tooltips: "Clique para editar fornecedor", "Clique para registrar pagamento"
+```

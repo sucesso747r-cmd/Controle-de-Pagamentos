@@ -5,6 +5,7 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Archive, 
+  CheckCircle2, 
   FileText, 
   Receipt,
   Pencil,
@@ -47,6 +48,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import SupplierEditModal from "./supplier-edit-modal";
 
 const MONTHS = [
   { id: 'jan', label: 'jan' }, { id: 'fev', label: 'fev' }, { id: 'mar', label: 'mar' },
@@ -61,6 +63,7 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   
   // Archiving states
   const [showTestModal, setShowTestModal] = useState(false);
@@ -77,7 +80,7 @@ export default function DashboardPage() {
     
     if (payment) {
       setSelectedPayment(payment);
-    } else if (supplier.isRecurring) {
+    } else {
       setLocation(`/pagamentos/novo?supplierId=${supplier.id}&monthYear=${monthYear}`);
     }
   };
@@ -91,21 +94,50 @@ export default function DashboardPage() {
     
     if (payment) {
       return (
-        <div className="w-full h-full flex items-center justify-center bg-[#d4edda] text-[#155724] text-[10px] font-semibold">
-          {formatCurrency(payment.amount)}
-        </div>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="w-full h-full flex items-center justify-center bg-[#d4edda] text-[#155724] text-[10px] font-semibold cursor-pointer hover:bg-[#c3e6cb] transition-colors">
+                {formatCurrency(payment.amount)}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Clique para ver detalhes do pagamento</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       );
     }
 
     if (supplier.isRecurring) {
       return (
-        <div className="w-full h-full flex items-center justify-center bg-[#f8d7da] text-[#721c24] font-bold">
-          ?
-        </div>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="w-full h-full flex items-center justify-center bg-[#f8d7da] text-[#721c24] font-bold cursor-pointer hover:bg-[#f5c6cb] transition-colors">
+                ?
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Clique para registrar pagamento</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       );
     }
 
-    return <div className="w-full h-full bg-[#f8f9fa]" />;
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="w-full h-full bg-[#f8f9fa] cursor-pointer hover:bg-[#e9ecef] transition-colors" />
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Clique para registrar pagamento</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
   };
 
   const getMonthTotal = (monthId: string) => {
@@ -223,11 +255,25 @@ export default function DashboardPage() {
               <TableBody>
                 {suppliers.map((supplier) => (
                   <TableRow key={supplier.id} className="hover:bg-muted/20">
-                    <TableCell className="font-medium">{supplier.name}</TableCell>
+                    <TableCell 
+                      className="font-medium cursor-pointer hover:underline decoration-primary hover:text-primary transition-colors"
+                      onClick={() => setEditingSupplier(supplier)}
+                    >
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span>{supplier.name}</span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Clique para editar fornecedor</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
                     {MONTHS.map(m => (
                       <TableCell 
                         key={m.id} 
-                        className="p-0 h-14 cursor-pointer border-l first:border-l-0"
+                        className="p-0 h-14 border-l first:border-l-0"
                         onClick={() => handleCellClick(supplier, m.id)}
                       >
                         {getCellContent(supplier, m.id)}
@@ -301,7 +347,7 @@ export default function DashboardPage() {
                   variant="outline" 
                   className="gap-2" 
                   disabled={selectedPayment.isArchived}
-                  onClick={() => window.open(selectedPayment.fileUrl || '#', '_blank')}
+                  onClick={() => window.open(selectedPayment.receiptUrl || '#', '_blank')}
                 >
                   <Receipt className="w-4 h-4 text-emerald-500" />
                   Ver Comprovante
@@ -425,7 +471,7 @@ export default function DashboardPage() {
       <AlertDialog open={!!paymentToDelete} onOpenChange={(val) => !val && setPaymentToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-heading">Tem certeza?</AlertDialogTitle>
+            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
             <AlertDialogDescription>
               Isso vai deletar o registro e os arquivos.
             </AlertDialogDescription>
@@ -441,6 +487,14 @@ export default function DashboardPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {editingSupplier && (
+        <SupplierEditModal 
+          supplier={editingSupplier} 
+          open={!!editingSupplier} 
+          onOpenChange={(open: boolean) => !open && setEditingSupplier(null)} 
+        />
+      )}
     </div>
   );
 }
