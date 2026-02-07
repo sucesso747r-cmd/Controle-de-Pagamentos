@@ -48,7 +48,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import SupplierEditModal from "./supplier-edit-modal";
+import SupplierEditModal from "@/components/supplier-edit-modal";
 
 const MONTHS = [
   { id: 'jan', label: 'jan' }, { id: 'fev', label: 'fev' }, { id: 'mar', label: 'mar' },
