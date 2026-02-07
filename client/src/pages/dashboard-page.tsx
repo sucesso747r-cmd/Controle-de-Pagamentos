@@ -5,13 +5,11 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Archive, 
-  CheckCircle2, 
   FileText, 
   Receipt,
   Pencil,
   Trash2,
   FlaskConical,
-  Download,
   Loader2
 } from "lucide-react";
 import { 
@@ -29,7 +27,6 @@ import {
   DialogHeader, 
   DialogTitle, 
   DialogFooter,
-  DialogDescription
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -49,7 +46,6 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 const MONTHS = [
@@ -86,33 +82,38 @@ export default function DashboardPage() {
     }
   };
 
+  const formatCurrency = (val: number) => 
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+
   const getCellContent = (supplier: Supplier, monthId: string) => {
     const monthYear = `${monthId}${currentYearSuffix}`;
     const payment = payments.find(p => p.supplierId === supplier.id && p.monthYear === monthYear);
     
     if (payment) {
       return (
-        <div className="w-full h-full flex items-center justify-center">
-          <CheckCircle2 className="w-5 h-5 text-emerald-500 fill-emerald-50" />
+        <div className="w-full h-full flex items-center justify-center bg-[#d4edda] text-[#155724] text-[10px] font-semibold">
+          {formatCurrency(payment.amount)}
         </div>
       );
     }
 
     if (supplier.isRecurring) {
       return (
-        <div className="w-full h-full flex items-center justify-center">
-          <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 font-bold border border-rose-100 hover:bg-rose-100 transition-colors">
-            ?
-          </div>
+        <div className="w-full h-full flex items-center justify-center bg-[#f8d7da] text-[#721c24] font-bold">
+          ?
         </div>
       );
     }
 
-    return null;
+    return <div className="w-full h-full bg-[#f8f9fa]" />;
   };
 
-  const formatCurrency = (val: number) => 
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+  const getMonthTotal = (monthId: string) => {
+    const monthYear = `${monthId}${currentYearSuffix}`;
+    return payments
+      .filter(p => p.monthYear === monthYear)
+      .reduce((acc, curr) => acc + curr.amount, 0);
+  };
 
   const handleDeletePayment = () => {
     if (paymentToDelete) {
@@ -234,6 +235,17 @@ export default function DashboardPage() {
                     ))}
                   </TableRow>
                 ))}
+                {/* TOTALS ROW */}
+                <TableRow className="hover:bg-transparent bg-[#cfe2ff] text-[#084298] font-bold border-t border-[#084298]/20">
+                  <TableCell className="font-bold">TOTAL</TableCell>
+                  {MONTHS.map(m => (
+                    <TableCell key={m.id} className="text-center text-[10px] p-0 h-14 border-l border-[#084298]/10 first:border-l-0">
+                      <div className="w-full h-full flex items-center justify-center">
+                        {formatCurrency(getMonthTotal(m.id))}
+                      </div>
+                    </TableCell>
+                  ))}
+                </TableRow>
               </TableBody>
             </Table>
           </div>

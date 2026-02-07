@@ -1,0 +1,58 @@
+MODIFICATION REQUEST - Status Dashboard Display:
+
+Change the Status Dashboard table visualization from icons to monetary values.
+
+CURRENT BEHAVIOR (to change):
+- Green checkmark (✓) when payment exists
+- Red "?" when recurring supplier has no payment
+- Empty/gray cell otherwise
+
+NEW BEHAVIOR (implement):
+
+CELL DISPLAY LOGIC:
+1. If payment exists for that month/supplier:
+   - Display the payment amount: "R$ 150,00"
+   - Background color: light green (#d4edda)
+   - Text color: dark green (#155724)
+   - Cell is clickable (opens payment details modal)
+
+2. If supplier is recurring BUT no payment for that month:
+   - Display: "?" (red question mark)
+   - Background color: light red (#f8d7da)
+   - Text color: dark red (#721c24)
+   - Cell is clickable (redirects to register payment)
+
+3. If supplier is NOT recurring OR future month:
+   - Display: empty
+   - Background color: light gray (#f8f9fa)
+   - No interaction
+
+TOTALS ROW (new feature):
+Add a final row at the bottom of the table:
+- First column label: "TOTAL" (bold text)
+- Each month column: sum of all payment amounts for that month
+- Format: "R$ 1.250,00"
+- Background color: light blue (#cfe2ff)
+- Text color: dark blue (#084298)
+- Not clickable (display only)
+- If no payments in a month: display "R$ 0,00"
+
+EXAMPLE TABLE STRUCTURE:
+Fornecedor    | jan26      | fev26      | mar26    | ...
+---------------------------------------------------------
+Luz e Força   | R$ 150,00  | R$ 155,00  | ?        | ...
+Água          | R$ 80,00   | ?          | R$ 85,00 | ...
+Internet      | R$ 120,00  | R$ 120,00  | R$ 120,00| ...
+---------------------------------------------------------
+TOTAL         | R$ 350,00  | R$ 275,00  | R$ 205,00| ...
+
+KEEP ALL OTHER FUNCTIONALITY:
+- Clicking on amount value opens payment details modal
+- Clicking on "?" redirects to register payment
+- Year filter and navigation unchanged
+- All existing modal functionality unchanged
+
+ALL UI TEXT IN PORTUGUESE (PT-BR):
+- Totals row label: "TOTAL"
+- Amount format: "R$ 0,00" (Brazilian currency format with comma for decimals)
+- All existing Portuguese labels and messages remain unchanged
