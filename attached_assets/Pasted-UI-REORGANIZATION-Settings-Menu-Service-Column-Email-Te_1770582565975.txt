@@ -1,0 +1,95 @@
+UI REORGANIZATION - Settings Menu + Service Column + Email Test:
+
+CHANGE 1 - CREATE SETTINGS MENU:
+Add new navigation menu item "Configurações" alongside existing "Status", "Registrar Pagamento", "Fornecedores".
+
+Settings page structure:
+
+SEÇÃO PERFIL:
+- Display logged user information:
+  * Nome: [User name from Google OAuth]
+  * Email: [User email from Google OAuth]
+- Non-editable (read-only display)
+
+SEÇÃO TESTES:
+- Button 1: "🧪 Testar Arquivamento (últimos 2 meses)"
+  * Same functionality as current test button
+  * Generates test ZIP with last 2 months data
+  * Does NOT delete files from system
+  
+- Button 2: "📧 Testar Envio de Email" (NEW)
+  * Opens modal with input field: "Email de destino" (pre-filled with EMAIL_DESTINO env var)
+  * User can edit email if needed
+  * Button "Enviar Email de Teste"
+  * When clicked: send test email with:
+    - Subject: "Teste - Sistema de Controle de Pagamentos"
+    - Body (HTML):
+      ---
+      Email de Teste
+      
+      Fornecedor: Exemplo Fornecedor Ltda
+      Serviço: Serviço de Exemplo
+      Valor pago: R$ 100,00
+      Mês referência: jan26
+      Dia do vencimento: 10
+      Chave Pix: teste@exemplo.com
+      Data de registro: [current date/time]
+      
+      📄 Fatura: [Link placeholder - arquivo de teste]
+      ✅ Comprovante: [Link placeholder - arquivo de teste]
+      
+      ---
+      Este é um email de teste do sistema
+      ---
+  * Show success message: "✅ Email de teste enviado para [email]!" 
+  * OR error message: "⚠️ Erro ao enviar email. Verifique configuração do Resend."
+
+SEÇÃO PLANO:
+- Display current plan information
+- Text: "Plano Atual: Starter" (or "Core" if applicable)
+- Placeholder section: "Pro Version"
+- Text: "(recursos premium em breve)"
+- Gray/disabled appearance
+
+REMOVE from Status Dashboard:
+- Remove "🧪 Testar Arquivamento" button from top of Status page
+- Keep "🗄️ Arquivar Ano [YYYY]" button (real year-end archiving)
+
+CHANGE 2 - ADD SERVICE NAME COLUMN TO STATUS TABLE:
+Modify Status Dashboard table structure:
+
+CURRENT STRUCTURE:
+Column A: Fornecedor | Columns B-M: jan26, fev26... dez26
+
+NEW STRUCTURE:
+Column A: Fornecedor | Column B: Nome do Serviço | Columns C-N: jan26, fev26... dez26
+
+Column B specifications:
+- Header: "Serviço"
+- Data: fetch "service name" field from Fornecedores table in database
+- Display service name for each supplier row
+- Text alignment: left
+- Style: regular text (not bold)
+- Not clickable (display only)
+
+Update table header row:
+Fornecedor | Serviço | jan26 | fev26 | mar26 | ... | dez26
+
+TOTALS ROW update:
+TOTAL | [empty cell] | R$ 350,00 | R$ 275,00 | ...
+
+RESPONSIVE BEHAVIOR:
+On mobile/small screens:
+- "Serviço" column should be scrollable horizontally with other columns
+- "Fornecedor" column can stay fixed if space allows
+
+ALL UI TEXT IN PORTUGUESE (PT-BR):
+- Menu item: "Configurações"
+- Settings sections: "Perfil", "Testes", "Plano"
+- Profile labels: "Nome:", "Email:"
+- Button labels: "🧪 Testar Arquivamento (últimos 2 meses)", "📧 Testar Envio de Email", "Enviar Email de Teste"
+- Modal title: "Testar Envio de Email"
+- Input label: "Email de destino:"
+- Plan texts: "Plano Atual:", "Pro Version", "(recursos premium em breve)"
+- Messages: "✅ Email de teste enviado para [email]!", "⚠️ Erro ao enviar email. Verifique configuração do Resend.", "Este é um email de teste do sistema"
+- Table header: "Serviço"

@@ -5,12 +5,10 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Archive, 
-  CheckCircle2, 
   FileText, 
   Receipt,
   Pencil,
   Trash2,
-  FlaskConical,
   Loader2
 } from "lucide-react";
 import { 
@@ -41,11 +39,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Tooltip,
-  TooltipContent,
   TooltipProvider,
   TooltipTrigger,
+  TooltipContent,
 } from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import SupplierEditModal from "@/components/supplier-edit-modal";
@@ -66,7 +63,6 @@ export default function DashboardPage() {
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   
   // Archiving states
-  const [showTestModal, setShowTestModal] = useState(false);
   const [showRealModal, setShowRealModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
@@ -159,14 +155,6 @@ export default function DashboardPage() {
     }
   };
 
-  const handleTestArchive = () => {
-    toast({
-      title: "✅ ZIP de teste gerado!",
-      description: "Arquivos mantidos no sistema.",
-    });
-    setShowTestModal(false);
-  };
-
   const handleRealArchive = () => {
     setIsArchiving(true);
     setTimeout(() => {
@@ -193,16 +181,6 @@ export default function DashboardPage() {
           <p className="text-muted-foreground text-sm">Olá, {user?.name}</p>
         </div>
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            className="gap-2 border-orange-200 bg-orange-50/30 text-orange-700 hover:bg-orange-50 hover:text-orange-800"
-            onClick={() => setShowTestModal(true)}
-          >
-            <FlaskConical className="w-4 h-4" />
-            🧪 Testar Arquivamento (últimos 2 meses)
-            <Badge variant="outline" className="ml-1 bg-orange-100 border-orange-200 text-orange-800 font-bold text-[10px]">MODO TESTE</Badge>
-          </Button>
-          
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -244,9 +222,10 @@ export default function DashboardPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent border-b">
-                  <TableHead className="w-[200px] font-bold text-foreground">Fornecedor</TableHead>
+                  <TableHead className="w-[180px] font-bold text-foreground sticky left-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10">Fornecedor</TableHead>
+                  <TableHead className="w-[150px] font-bold text-foreground">Serviço</TableHead>
                   {MONTHS.map(m => (
-                    <TableHead key={m.id} className="text-center font-bold text-foreground min-w-[70px]">
+                    <TableHead key={m.id} className="text-center font-bold text-foreground min-w-[75px]">
                       {m.label}{currentYearSuffix}
                     </TableHead>
                   ))}
@@ -256,7 +235,7 @@ export default function DashboardPage() {
                 {suppliers.map((supplier) => (
                   <TableRow key={supplier.id} className="hover:bg-muted/20">
                     <TableCell 
-                      className="font-medium cursor-pointer hover:underline decoration-primary hover:text-primary transition-colors"
+                      className="font-medium cursor-pointer hover:underline decoration-primary hover:text-primary transition-colors sticky left-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10"
                       onClick={() => setEditingSupplier(supplier)}
                     >
                       <TooltipProvider>
@@ -270,6 +249,7 @@ export default function DashboardPage() {
                         </Tooltip>
                       </TooltipProvider>
                     </TableCell>
+                    <TableCell className="text-muted-foreground">{supplier.serviceName}</TableCell>
                     {MONTHS.map(m => (
                       <TableCell 
                         key={m.id} 
@@ -283,7 +263,8 @@ export default function DashboardPage() {
                 ))}
                 {/* TOTALS ROW */}
                 <TableRow className="hover:bg-transparent bg-[#cfe2ff] text-[#084298] font-bold border-t border-[#084298]/20">
-                  <TableCell className="font-bold">TOTAL</TableCell>
+                  <TableCell className="font-bold sticky left-0 bg-[#cfe2ff] z-10">TOTAL</TableCell>
+                  <TableCell className="bg-[#cfe2ff]" />
                   {MONTHS.map(m => (
                     <TableCell key={m.id} className="text-center text-[10px] p-0 h-14 border-l border-[#084298]/10 first:border-l-0">
                       <div className="w-full h-full flex items-center justify-center">
@@ -381,30 +362,6 @@ export default function DashboardPage() {
           )}
           <DialogFooter>
             <Button variant="outline" className="w-full" onClick={() => setSelectedPayment(null)}>Fechar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Test Archive Modal */}
-      <Dialog open={showTestModal} onOpenChange={setShowTestModal}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="font-heading">🧪 Modo de Teste - Arquivamento</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <p className="text-sm">Isso vai gerar um arquivo ZIP de TESTE contendo apenas os últimos 2 meses com pagamentos registrados.</p>
-            <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg space-y-2">
-              <p className="text-sm font-bold text-amber-800">⚠️ IMPORTANTE:</p>
-              <ul className="text-xs text-amber-700 list-disc pl-4 space-y-1">
-                <li>Arquivos NÃO serão deletados do sistema</li>
-                <li>Use apenas para validar se a funcionalidade funciona</li>
-                <li>No fim do ano real, use o botão "Arquivar Ano"</li>
-              </ul>
-            </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setShowTestModal(false)}>Cancelar</Button>
-            <Button className="bg-orange-600 hover:bg-orange-700 text-white" onClick={handleTestArchive}>Gerar ZIP de Teste</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

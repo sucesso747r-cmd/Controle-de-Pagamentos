@@ -8,6 +8,7 @@ import AuthPage from "@/pages/auth-page";
 import DashboardPage from "@/pages/dashboard-page";
 import SuppliersPage from "@/pages/suppliers-page";
 import PaymentPage from "@/pages/payment-page";
+import SettingsPage from "@/pages/settings-page";
 import Layout from "@/components/layout";
 import { useStore } from "@/lib/store";
 
@@ -44,6 +45,10 @@ function Router() {
       
       <Route path="/pagamentos/novo">
         <ProtectedRoute component={PaymentPage} />
+      </Route>
+
+      <Route path="/configuracoes">
+        <ProtectedRoute component={SettingsPage} />
       </Route>
 
       <Route component={NotFound} />
