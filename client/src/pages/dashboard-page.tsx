@@ -346,7 +346,7 @@ export default function DashboardPage() {
                     }}
                   >
                     <Pencil className="w-4 h-4" />
-                    ✏️ Editar
+                    Editar
                   </Button>
                   <Button 
                     variant="ghost" 
@@ -354,7 +354,7 @@ export default function DashboardPage() {
                     onClick={() => setPaymentToDelete(selectedPayment.id)}
                   >
                     <Trash2 className="w-4 h-4" />
-                    🗑️ Deletar Pagamento
+                    Deletar Pagamento
                   </Button>
                 </div>
               )}

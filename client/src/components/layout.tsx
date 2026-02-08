@@ -6,6 +6,7 @@ import {
   Users, 
   LogOut, 
   Settings,
+  HelpCircle,
   Menu
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: "/pagamentos/novo", label: "Registrar Pagamento", icon: PlusCircle },
     { href: "/fornecedores", label: "Fornecedores", icon: Users },
     { href: "/configuracoes", label: "Configurações", icon: Settings },
+    { href: "/ajuda", label: "Central de Ajuda", icon: HelpCircle },
   ];
 
   const NavContent = () => (

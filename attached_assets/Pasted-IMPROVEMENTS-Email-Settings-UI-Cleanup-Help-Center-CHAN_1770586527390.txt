@@ -1,0 +1,111 @@
+IMPROVEMENTS - Email Settings + UI Cleanup + Help Center:
+
+CHANGE 1 - EMAIL CONFIGURATION IN SETTINGS:
+Add new section "Email" in Configurações page (between "Perfil" and "Testes" sections).
+
+Section structure:
+- Title: "Email" (with icon ✉️)
+- Field 1: "Email de destino para comprovantes"
+  * Input text type email
+  * Pre-filled with current EMAIL_DESTINO environment variable or empty
+  * Placeholder: "exemplo@empresa.com.br"
+  * Validation: valid email format required
+  * Save this value to database per user (user preferences table)
+  
+- Field 2: Checkbox "Enviar cópia?"
+  * When unchecked: no additional fields shown
+  * When checked: show radio buttons below:
+    - Radio option 1: "CC (com cópia visível)"
+    - Radio option 2: "CCO (cópia oculta)"
+  
+- Field 3 (conditional): "Email para CC/CCO"
+  * Only shows if "Enviar cópia?" is checked
+  * Input text type email
+  * Placeholder: "outro@empresa.com.br"
+  * Validation: valid email format required
+  
+- Button: "Salvar Configurações de Email"
+  * Success message: "✅ Configurações de email salvas com sucesso!"
+  * Error message: "⚠️ Erro ao salvar. Verifique os emails e tente novamente."
+
+UPDATE email sending logic:
+When sending payment confirmation emails:
+- TO: use "Email de destino" from user preferences (fallback to EMAIL_DESTINO env var)
+- If "Enviar cópia?" is checked:
+  * CC: add email if radio "CC" selected
+  * BCC: add email if radio "CCO" selected
+
+CHANGE 2 - REMOVE DUPLICATE EMOJIS IN SETTINGS:
+In "Testes" section (Configurações page):
+- Button 1: Remove 🧪 emoji, keep only icon
+  * Text: "Testar Arquivamento (últimos 2 meses)"
+  * Keep flask icon from UI library
+  
+- Button 2: Remove 📧 emoji, keep only icon
+  * Text: "Testar Envio de Email"
+  * Keep envelope icon from UI library
+
+CHANGE 3 - REMOVE EMOJIS IN PAYMENT DETAILS MODAL:
+In "Detalhes do Pagamento" modal:
+Remove all text emojis from buttons, keep only icons from UI library:
+- "Ver Fatura" button: remove 📄 emoji, keep document icon
+- "Ver Comprovante" button: remove ✅ emoji, keep checkmark icon
+- "Editar" button: remove ✏️ emoji, keep pencil icon
+- "Deletar Pagamento" button: remove 🗑️ emoji, keep trash icon
+
+CHANGE 4 - HELP CENTER MENU:
+Add new navigation menu item: "Central de Ajuda"
+Position: after "Configurações" and before "Sair" in menu
+
+Help Center page structure:
+
+HEADER:
+- Title: "Central de Ajuda"
+- Subtitle: "Encontre respostas e entre em contato com nosso suporte."
+
+SECTION 1 - PRIMEIROS PASSOS:
+- Icon: rocket 🚀
+- Title: "Primeiros Passos"
+- Subtitle: "Comece a usar o sistema"
+- Content (accordion or cards):
+  1. "Como cadastrar fornecedores?"
+     - Brief explanation with steps
+  2. "Como registrar um pagamento?"
+     - Brief explanation with steps
+  3. "Como visualizar histórico?"
+     - Brief explanation about Status dashboard
+
+SECTION 2 - GUIAS E TUTORIAIS:
+- Icon: book 📚
+- Title: "Guias, Dicas e Tutoriais"
+- Subtitle: "Acelere sua jornada com dicas práticas"
+- Content (accordion or cards):
+  1. "Como editar um pagamento?"
+  2. "Como arquivar o ano fiscal?"
+  3. "Como configurar emails?"
+  4. "Dicas para organizar fornecedores"
+
+SECTION 3 - SUPORTE:
+- Icon: headset 🎧
+- Title: "Suporte"
+- Subtitle: "Precisa de ajuda? Entre em contato conosco"
+- Button: "Abrir WhatsApp" (primary/green button)
+  * WhatsApp link format: https://wa.me/5511999999999?text=Olá,%20preciso%20de%20ajuda%20com%20o%20Sistema%20de%20Controle%20de%20Pagamentos
+  * Note for developer: "Replace 5511999999999 with actual WhatsApp number"
+  * Opens in new tab (target="_blank")
+- Text below button: "Horário de atendimento: Seg-Sex, 9h às 18h"
+- Small text: "(Atendimento via bot IA com escalonamento para humano se necessário)"
+
+VISUAL CONSISTENCY:
+- All sections with consistent spacing
+- Card-based layout for better organization
+- Icons consistent with rest of the application
+- Mobile responsive (stack sections vertically on small screens)
+
+ALL UI TEXT IN PORTUGUESE (PT-BR):
+- Section titles as specified above
+- Labels: "Email de destino para comprovantes", "Enviar cópia?", "Email para CC/CCO", "CC (com cópia visível)", "CCO (cópia oculta)"
+- Buttons: "Salvar Configurações de Email", "Abrir WhatsApp"
+- Help sections: "Primeiros Passos", "Guias, Dicas e Tutoriais", "Suporte"
+- Messages: "✅ Configurações de email salvas com sucesso!", "⚠️ Erro ao salvar. Verifique os emails e tente novamente."
+- Placeholder texts and all other content as specified

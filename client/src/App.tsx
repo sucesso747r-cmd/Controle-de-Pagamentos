@@ -9,6 +9,7 @@ import DashboardPage from "@/pages/dashboard-page";
 import SuppliersPage from "@/pages/suppliers-page";
 import PaymentPage from "@/pages/payment-page";
 import SettingsPage from "@/pages/settings-page";
+import HelpPage from "@/pages/help-page";
 import Layout from "@/components/layout";
 import { useStore } from "@/lib/store";
 
@@ -49,6 +50,10 @@ function Router() {
 
       <Route path="/configuracoes">
         <ProtectedRoute component={SettingsPage} />
+      </Route>
+
+      <Route path="/ajuda">
+        <ProtectedRoute component={HelpPage} />
       </Route>
 
       <Route component={NotFound} />

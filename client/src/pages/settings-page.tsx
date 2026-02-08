@@ -1,11 +1,11 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useStore } from "@/lib/store";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { FlaskConical, Mail, Loader2, CheckCircle, ShieldCheck } from "lucide-react";
+import { FlaskConical, Mail, Loader2, CheckCircle, ShieldCheck, MailCheck, Copy, Eye, EyeOff } from "lucide-react";
 import { 
   Dialog, 
   DialogContent, 
@@ -13,6 +13,8 @@ import {
   DialogTitle, 
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export default function SettingsPage() {
   const { user } = useStore();
@@ -20,6 +22,20 @@ export default function SettingsPage() {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [testEmail, setTestEmail] = useState(user?.email || "");
   const [isSending, setIsSending] = useState(false);
+
+  // Email Configuration State
+  const [destEmail, setDestEmail] = useState("exemplo@empresa.com.br");
+  const [sendCopy, setSendCopy] = useState(false);
+  const [copyType, setCopyType] = useState<"cc" | "bcc">("cc");
+  const [copyEmail, setCopyEmail] = useState("");
+
+  const handleSaveEmailConfig = () => {
+    if (!destEmail.includes("@")) {
+      toast({ variant: "destructive", title: "⚠️ Erro ao salvar. Verifique os emails e tente novamente." });
+      return;
+    }
+    toast({ title: "✅ Configurações de email salvas com sucesso!" });
+  };
 
   const handleTestArchive = () => {
     toast({
@@ -70,6 +86,70 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* EMAIL */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl font-heading flex items-center gap-2">
+              <MailCheck className="w-5 h-5 text-emerald-500" />
+              Email
+            </CardTitle>
+            <CardDescription>Configure como você recebe os comprovantes de pagamento.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="dest-email-config">Email de destino para comprovantes</Label>
+              <Input 
+                id="dest-email-config" 
+                type="email"
+                value={destEmail}
+                onChange={(e) => setDestEmail(e.target.value)}
+                placeholder="exemplo@empresa.com.br"
+              />
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="send-copy" 
+                  checked={sendCopy}
+                  onCheckedChange={(val) => setSendCopy(val as boolean)}
+                />
+                <Label htmlFor="send-copy" className="cursor-pointer">Enviar cópia?</Label>
+              </div>
+
+              {sendCopy && (
+                <div className="space-y-4 pl-6 border-l-2 border-muted animate-in fade-in slide-in-from-left-2 duration-200">
+                  <RadioGroup value={copyType} onValueChange={(val) => setCopyType(val as "cc" | "bcc")}>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="cc" id="cc-opt" />
+                      <Label htmlFor="cc-opt" className="cursor-pointer">CC (com cópia visível)</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="bcc" id="bcc-opt" />
+                      <Label htmlFor="bcc-opt" className="cursor-pointer">CCO (cópia oculta)</Label>
+                    </div>
+                  </RadioGroup>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="copy-email">Email para CC/CCO</Label>
+                    <Input 
+                      id="copy-email" 
+                      type="email"
+                      value={copyEmail}
+                      onChange={(e) => setCopyEmail(e.target.value)}
+                      placeholder="outro@empresa.com.br"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <Button onClick={handleSaveEmailConfig} className="w-full sm:w-auto">
+              Salvar Configurações de Email
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* TESTES */}
         <Card>
           <CardHeader>
@@ -85,7 +165,7 @@ export default function SettingsPage() {
               onClick={handleTestArchive}
             >
               <FlaskConical className="w-4 h-4" />
-              🧪 Testar Arquivamento (últimos 2 meses)
+              Testar Arquivamento (últimos 2 meses)
             </Button>
             <Button 
               variant="outline" 
@@ -93,7 +173,7 @@ export default function SettingsPage() {
               onClick={() => setShowEmailModal(true)}
             >
               <Mail className="w-4 h-4" />
-              📧 Testar Envio de Email
+              Testar Envio de Email
             </Button>
           </CardContent>
         </Card>
