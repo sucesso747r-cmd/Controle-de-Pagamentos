@@ -273,6 +273,20 @@ export default function DashboardPage() {
                     </TableCell>
                   ))}
                 </TableRow>
+                {/* ANNUAL TOTAL ROW */}
+                <TableRow className="hover:bg-transparent bg-[#0d47a1] text-white font-bold">
+                  <TableCell className="font-bold sticky left-0 bg-[#0d47a1] z-10">TOTAL ANO {selectedYear}</TableCell>
+                  <TableCell />
+                  {MONTHS.map((m, i) => (
+                    <TableCell key={m.id} className="text-center p-0 h-14 border-l border-white/10">
+                      {i === MONTHS.length - 1 && (
+                        <div className="w-full h-full flex items-center justify-center">
+                          {formatCurrency(payments.filter(p => p.monthYear.endsWith(currentYearSuffix)).reduce((acc, p) => acc + p.amount, 0))}
+                        </div>
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
               </TableBody>
             </Table>
           </div>

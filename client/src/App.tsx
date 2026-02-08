@@ -8,6 +8,7 @@ import AuthPage from "@/pages/auth-page";
 import DashboardPage from "@/pages/dashboard-page";
 import SuppliersPage from "@/pages/suppliers-page";
 import PaymentPage from "@/pages/payment-page";
+import AnalyticsPage from "@/pages/analytics-page";
 import SettingsPage from "@/pages/settings-page";
 import HelpPage from "@/pages/help-page";
 import Layout from "@/components/layout";
@@ -38,6 +39,10 @@ function Router() {
       
       <Route path="/">
         <ProtectedRoute component={DashboardPage} />
+      </Route>
+
+      <Route path="/analytics">
+        <ProtectedRoute component={AnalyticsPage} />
       </Route>
       
       <Route path="/fornecedores">

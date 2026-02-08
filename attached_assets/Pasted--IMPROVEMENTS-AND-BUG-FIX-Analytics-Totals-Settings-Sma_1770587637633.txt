@@ -1,0 +1,218 @@
+```
+IMPROVEMENTS AND BUG FIX - Analytics, Totals, Settings, Smart Dropdown:
+
+IMPROVEMENT 1 - ANNUAL TOTAL ROW IN STATUS TABLE:
+Add new row at the bottom of Status table (after monthly TOTAL row):
+
+Structure:
+- First column: "TOTAL ANO [2026]" (bold text, replace 2026 with current year)
+- Second column (Serviço): empty cell
+- Remaining columns (jan26-dez26): empty cells
+- Last cell: Sum of all 12 monthly totals
+- Format: "R$ 15.750,00"
+- Background color: dark blue (#0d47a1)
+- Text color: white
+- Font weight: bold
+- Not clickable (display only)
+
+Example table structure:
+```
+Fornecedor    | Serviço     | jan26      | fev26      | ... | dez26
+----------------------------------------------------------------------
+Luz e Força   | Energia     | R$ 150,00  | R$ 155,00  | ... | R$ 160,00
+...
+----------------------------------------------------------------------
+TOTAL         |             | R$ 350,00  | R$ 275,00  | ... | R$ 400,00
+TOTAL ANO 2026|             |            |            |     | R$ 4.200,00
+```
+
+IMPROVEMENT 2 - ANALYTICS DASHBOARD (NEW MENU ITEM):
+Add new navigation menu item: "Dashboard"
+- Icon: chart/analytics icon
+- Position: between "Status" and "Registrar Pagamento"
+
+Dashboard page structure:
+
+HEADER:
+- Title: "Dashboard Analítico"
+- Subtitle: "Visualize suas despesas e tendências"
+- Year filter dropdown: select year to analyze
+
+SECTION 1 - SUMMARY CARDS (4 cards in row):
+Card 1: "Total Gasto [Ano]"
+- Large number: R$ 15.750,00
+- Icon: money/wallet
+
+Card 2: "Média Mensal"
+- Large number: R$ 1.312,50
+- Icon: calendar
+
+Card 3: "Maior Despesa"
+- Large number: R$ 1.850,00
+- Subtitle: "Março 2026"
+- Icon: arrow up
+
+Card 4: "Menor Despesa"
+- Large number: R$ 980,00
+- Subtitle: "Janeiro 2026"
+- Icon: arrow down
+
+SECTION 2 - CHARTS (2x2 grid, responsive):
+
+Chart 1 (top-left): "Despesas por Tipo de Serviço"
+- Type: Pie/Donut chart
+- Data: Sum payments grouped by service type
+- Colors: distinct colors per service
+- Show percentage and value
+- Legend on side
+
+Chart 2 (top-right): "Tendência Mensal"
+- Type: Line chart
+- X-axis: Months (jan-dez)
+- Y-axis: Total amount (R$)
+- Show data points
+- Smooth line
+- Tooltip on hover
+
+Chart 3 (bottom-left): "Top 5 Fornecedores Mais Caros"
+- Type: Horizontal bar chart
+- Y-axis: Supplier names
+- X-axis: Total amount
+- Sorted descending
+- Show values on bars
+
+Chart 4 (bottom-right): "Comparativo Mensal"
+- Type: Vertical bar chart
+- X-axis: Months
+- Y-axis: Amount
+- Color code: green (below average), red (above average)
+- Average line overlay
+
+Use chart library: Chart.js or Recharts (choose based on tech stack)
+
+IMPROVEMENT 3 - INITIAL YEAR SETTING IN CONFIGURATIONS:
+Add new section "Dados" in Configurações page (after "Email" section, before "Testes").
+
+Section structure:
+- Title: "Dados" (with icon 📊)
+- Label: "Ano inicial dos dados"
+- Field: Dropdown/select
+- Options: Generate years from 2020 to current year (2026)
+  * 2020, 2021, 2022, 2023, 2024, 2025, 2026
+- Default: Current year minus 1 (2025)
+- Help text: "Selecione o ano mais antigo para o qual você tem dados. Anos anteriores não serão exibidos na navegação."
+- Button: "Salvar" (or integrated with main settings save button)
+- Save to database: user preferences table
+
+APPLY FILTER:
+- Status dashboard year navigation: only show years >= initial year
+- Dashboard analytics year filter: only show years >= initial year
+- Do not allow creating payments before initial year
+
+Success message: "✅ Ano inicial configurado com sucesso!"
+
+IMPROVEMENT 4 - SMART SERVICE NAME DROPDOWN:
+Change "Nome do serviço" field in supplier form to smart autocomplete/combo box.
+
+Implementation:
+- Field type: Combobox (autocomplete + manual input)
+- Data source: 
+  * Query database for distinct service names already used
+  * Pre-populate with common services if database empty:
+    - "Energia Elétrica"
+    - "Água e Esgoto"
+    - "Gás Encanado"
+    - "Internet"
+    - "Telefonia Móvel"
+    - "Telefonia Fixa"
+    - "Cartão de Crédito VISA"
+    - "Cartão de Crédito Mastercard"
+    - "Cartão de Crédito Elo"
+    - "Aluguel"
+    - "Condomínio"
+    - "IPTU"
+    - "Seguro"
+    - "Consultoria"
+    - "Manutenção"
+
+Behavior:
+- User starts typing: show filtered suggestions
+- User can select from list OR type new service name
+- If new name entered: automatically add to suggestions list for future
+- Sort suggestions alphabetically
+- Case-insensitive search
+- Show dropdown icon to expand full list
+- Placeholder: "Digite ou selecione um serviço"
+
+BUG FIX 5 - FUNCTIONAL ACCORDIONS IN HELP CENTER:
+Fix "Guias, Dicas e Tutoriais" section in Central de Ajuda.
+
+Current issue: Buttons not functional (clicking does nothing)
+
+Solution: Implement accordion/collapse component
+
+Structure for each item:
+- Clickable header with question text
+- Icon: ▼ (collapsed) / ▲ (expanded)
+- Smooth expand/collapse animation (300ms)
+- Content area with helpful text
+
+Content to add:
+
+"Como editar um pagamento?"
+Content:
+1. Acesse a tela Status
+2. Clique no valor do pagamento (célula verde)
+3. No modal de detalhes, clique no botão "Editar"
+4. Modifique os campos necessários
+5. Clique em "Salvar Alterações"
+Nota: Não é possível alterar o fornecedor. Para isso, delete e crie novo pagamento.
+
+"Como arquivar o ano fiscal?"
+Content:
+1. Certifique-se que todos os pagamentos do ano estão registrados
+2. Vá para a tela Status
+3. Clique no botão "🗄️ Arquivar Ano [YYYY]" (disponível apenas no fim do ano)
+4. Confirme a operação
+5. Faça download do arquivo ZIP gerado
+6. Salve o arquivo em local seguro (nuvem ou HD externo)
+Importante: Após confirmar, os arquivos serão removidos do sistema. Certifique-se de fazer o download!
+
+"Como configurar emails?"
+Content:
+1. Acesse o menu "Configurações"
+2. Na seção "Email", preencha:
+   - Email de destino (onde receberá os comprovantes)
+   - Opcionalmente: marque "Enviar cópia" e escolha CC ou CCO
+3. Clique em "Salvar Configurações de Email"
+4. Use o botão "Testar Envio de Email" para validar a configuração
+Os emails são enviados automaticamente ao registrar um pagamento.
+
+"Dicas para organizar fornecedores"
+Content:
+- Use nomes claros e consistentes (ex: "CPFL Energia" ao invés de "cpfl" ou "Companhia Luz")
+- Marque fornecedores mensais como "Recorrente" para facilitar visualização
+- Cadastre o dia de vencimento para planejar fluxo de caixa
+- Use o campo "Serviço" de forma padronizada (selecione da lista sempre que possível)
+- Revise periodicamente a lista de fornecedores e remova inativos
+
+Interaction:
+- Only one accordion open at a time (optional: allow multiple)
+- Smooth animation on expand/collapse
+- Hover effect on headers
+- Clear visual feedback on click
+
+ALL UI TEXT IN PORTUGUESE (PT-BR):
+- Dashboard menu: "Dashboard"
+- Page title: "Dashboard Analítico"
+- Subtitle: "Visualize suas despesas e tendências"
+- Filter: "Ano:"
+- Cards: "Total Gasto [Ano]", "Média Mensal", "Maior Despesa", "Menor Despesa"
+- Chart titles as specified above
+- Section: "Dados"
+- Label: "Ano inicial dos dados"
+- Help text as specified
+- Success message as specified
+- Service placeholder: "Digite ou selecione um serviço"
+- Help content as specified above
+```

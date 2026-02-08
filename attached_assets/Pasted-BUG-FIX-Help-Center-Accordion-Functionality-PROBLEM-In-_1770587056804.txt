@@ -1,0 +1,130 @@
+BUG FIX - Help Center Accordion Functionality:
+
+PROBLEM:
+In "Central de Ajuda" page, section "Guias, Dicas e Tutoriais", the buttons like "Como editar um pagamento?" are not functional - clicking them does nothing.
+
+SOLUTION:
+Convert all items in "Guias, Dicas e Tutoriais" section to accordion/expandable components.
+
+IMPLEMENTATION:
+
+Section: GUIAS, DICAS E TUTORIAIS
+Each item should be an accordion that expands on click to show detailed content:
+
+ITEM 1: "Como editar um pagamento?"
+Content when expanded:
+---
+Para editar um pagamento já registrado:
+
+1. Acesse a tela "Status"
+2. Clique no valor (R$) do pagamento que deseja editar
+3. No modal "Detalhes do Pagamento", clique em "✏️ Editar"
+4. Modifique os dados necessários (valor, mês, dia vencimento, chave Pix)
+5. Se precisar trocar os anexos, clique em "Próximo: Anexar Documentos"
+6. Clique em "Salvar" para confirmar as alterações
+
+⚠️ Nota: Não é possível trocar o fornecedor ao editar. Para isso, delete o pagamento e crie um novo.
+---
+
+ITEM 2: "Como arquivar o ano fiscal?"
+Content when expanded:
+---
+O arquivamento anual libera espaço de armazenamento e organiza seu histórico.
+
+QUANDO ARQUIVAR:
+• No fim do ano (dezembro/janeiro)
+• Quando tiver pelo menos 12 meses de dados
+
+COMO ARQUIVAR:
+1. Acesse a tela "Status"
+2. Certifique-se de que está visualizando o ano que deseja arquivar
+3. Clique no botão "🗄️ Arquivar Ano [AAAA]"
+4. Confirme a operação
+5. Download do arquivo historico_AAAA.zip iniciará automaticamente
+6. Salve o arquivo em local seguro (nuvem pessoal, HD externo)
+7. Após salvar, clique em "✅ Confirmar: Baixei o Arquivo"
+
+⚠️ IMPORTANTE: Após confirmar, os arquivos (faturas e comprovantes) serão removidos do sistema. Os dados dos pagamentos continuam visíveis, mas sem os anexos.
+
+TESTE ANTES:
+Use o botão "🧪 Testar Arquivamento" em Configurações → Testes para validar a funcionalidade com apenas 2 meses de dados (não deleta nada).
+---
+
+ITEM 3: "Como configurar emails?"
+Content when expanded:
+---
+Configure para onde os comprovantes de pagamento serão enviados.
+
+PASSO A PASSO:
+1. Acesse "Configurações" no menu lateral
+2. Role até a seção "Email"
+3. Preencha "Email de destino para comprovantes" (pode ser diferente do seu email de login)
+4. (Opcional) Marque "Enviar cópia?" se quiser receber cópia em outro email
+   • Escolha CC (cópia visível) ou CCO (cópia oculta)
+   • Preencha o email adicional
+5. Clique em "Salvar Configurações de Email"
+
+TESTAR CONFIGURAÇÃO:
+• Vá em Configurações → Testes
+• Clique em "📧 Testar Envio de Email"
+• Verifique se o email chegou corretamente
+
+💡 DICA: Se os emails não estiverem chegando, verifique a pasta de spam/lixo eletrônico.
+---
+
+ITEM 4: "Dicas para organizar fornecedores"
+Content when expanded:
+---
+Mantenha seus fornecedores organizados para facilitar o controle.
+
+✅ BOAS PRÁTICAS:
+
+1. NOMEAÇÃO CONSISTENTE:
+   • Use nome oficial da empresa
+   • Exemplo: "CPFL Energia" (não "cpfl" ou "Luz")
+
+2. NOME DO SERVIÇO CLARO:
+   • Seja específico: "Energia Elétrica - Escritório" 
+   • Evite genérico: "Serviço"
+
+3. MARQUE RECORRENTE CORRETAMENTE:
+   • Marque "É recorrente (mensal)?" para contas que vêm todo mês
+   • Isso cria alertas automáticos (?) na tela Status
+   • Deixe desmarcado para serviços eventuais
+
+4. DIA DO VENCIMENTO:
+   • Cadastre o dia de vencimento ao criar o fornecedor
+   • Facilita planejamento de fluxo de caixa
+   • Use para futuros alertas automáticos
+
+5. CATEGORIZAÇÃO:
+   • Agrupe por tipo no nome do serviço:
+     - "Utilidades - Água"
+     - "Utilidades - Luz"
+     - "Serviços - TI"
+     - "Serviços - Consultoria"
+
+6. REVISÃO PERIÓDICA:
+   • Mensalmente, revise fornecedores inativos
+   • Delete os que não usa mais
+   • Mantém dashboard limpo e rápido
+
+💡 DICA PRO: No início de cada mês, confira a linha de "?" vermelhos no Status - são suas contas recorrentes pendentes!
+---
+
+UI BEHAVIOR:
+- Default state: All accordions collapsed
+- Click on item header: expand that item, collapse others (only 1 open at a time)
+- Click again on expanded item: collapse it
+- Smooth animation on expand/collapse (300ms transition)
+- Icon indicator: ▶ when collapsed, ▼ when expanded
+
+STYLING:
+- Accordion headers: same style as current buttons but with expand indicator
+- Content area: light background (#f8f9fa), padding, easy to read
+- Content text: left-aligned, line-height 1.6 for readability
+- Keep emoji/icons in headers for visual consistency
+
+ALL UI TEXT IN PORTUGUESE (PT-BR):
+- All content as specified above in Portuguese
+- Keep existing section structure and styling

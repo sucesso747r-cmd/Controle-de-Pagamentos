@@ -3,6 +3,7 @@ import { useStore } from "@/lib/store";
 import { 
   LayoutDashboard, 
   PlusCircle, 
+  BarChart3,
   Users, 
   LogOut, 
   Settings,
@@ -21,6 +22,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { href: "/", label: "Status", icon: LayoutDashboard },
+    { href: "/analytics", label: "Dashboard", icon: BarChart3 },
     { href: "/pagamentos/novo", label: "Registrar Pagamento", icon: PlusCircle },
     { href: "/fornecedores", label: "Fornecedores", icon: Users },
     { href: "/configuracoes", label: "Configurações", icon: Settings },

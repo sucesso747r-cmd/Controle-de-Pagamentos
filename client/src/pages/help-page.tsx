@@ -73,21 +73,67 @@ export default function HelpCenterPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              "Como editar um pagamento?",
-              "Como arquivar o ano fiscal?",
-              "Como configurar emails?",
-              "Dicas para organizar fornecedores"
-            ].map((title, idx) => (
-              <Card key={idx} className="cursor-pointer hover:bg-muted/50 transition-colors group">
-                <CardContent className="p-4 flex items-center justify-between">
-                  <span className="font-medium">{title}</span>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="edit-payment" className="border rounded-lg px-4 bg-card/50">
+              <AccordionTrigger className="hover:no-underline font-medium">Como editar um pagamento?</AccordionTrigger>
+              <AccordionContent className="text-muted-foreground space-y-2">
+                <ol className="list-decimal pl-4 space-y-1">
+                  <li>Acesse a tela Status</li>
+                  <li>Clique no valor do pagamento (célula verde)</li>
+                  <li>No modal de detalhes, clique no botão "Editar"</li>
+                  <li>Modifique os campos necessários</li>
+                  <li>Clique em "Salvar Alterações"</li>
+                </ol>
+                <p className="text-sm italic mt-2">Nota: Não é possível alterar o fornecedor. Para isso, delete e crie novo pagamento.</p>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="archive" className="border rounded-lg px-4 bg-card/50 mt-2">
+              <AccordionTrigger className="hover:no-underline font-medium">Como arquivar o ano fiscal?</AccordionTrigger>
+              <AccordionContent className="text-muted-foreground space-y-2">
+                <ol className="list-decimal pl-4 space-y-1">
+                  <li>Certifique-se que todos os pagamentos do ano estão registrados</li>
+                  <li>Vá para a tela Status</li>
+                  <li>Clique no botão "🗄️ Arquivar Ano [YYYY]" (disponível apenas no fim do ano)</li>
+                  <li>Confirme a operação</li>
+                  <li>Faça download do arquivo ZIP gerado</li>
+                  <li>Salve o arquivo em local seguro (nuvem ou HD externo)</li>
+                </ol>
+                <p className="text-sm font-bold text-rose-500 mt-2">Importante: Após confirmar, os arquivos serão removidos do sistema. Certifique-se de fazer o download!</p>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="emails" className="border rounded-lg px-4 bg-card/50 mt-2">
+              <AccordionTrigger className="hover:no-underline font-medium">Como configurar emails?</AccordionTrigger>
+              <AccordionContent className="text-muted-foreground space-y-2">
+                <ol className="list-decimal pl-4 space-y-1">
+                  <li>Acesse o menu "Configurações"</li>
+                  <li>Na seção "Email", preencha:
+                    <ul className="list-disc pl-4 mt-1">
+                      <li>Email de destino (onde receberá os comprovantes)</li>
+                      <li>Opcionalmente: marque "Enviar cópia" e escolha CC ou CCO</li>
+                    </ul>
+                  </li>
+                  <li>Clique em "Salvar Configurações de Email"</li>
+                  <li>Use o botão "Testar Envio de Email" para validar a configuração</li>
+                </ol>
+                <p className="text-sm mt-2">Os emails são enviados automaticamente ao registrar um pagamento.</p>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="tips" className="border rounded-lg px-4 bg-card/50 mt-2">
+              <AccordionTrigger className="hover:no-underline font-medium">Dicas para organizar fornecedores?</AccordionTrigger>
+              <AccordionContent className="text-muted-foreground space-y-2">
+                <ul className="list-disc pl-4 space-y-1">
+                  <li>Use nomes claros e consistentes (ex: "CPFL Energia" ao invés de "cpfl" ou "Companhia Luz")</li>
+                  <li>Marque fornecedores mensais como "Recorrente" para facilitar visualização</li>
+                  <li>Cadastre o dia de vencimento para planejar fluxo de caixa</li>
+                  <li>Use o campo "Serviço" de forma padronizada (selecione da lista sempre que possível)</li>
+                  <li>Revise periodicamente a lista de fornecedores e remova inativos</li>
+                </ul>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </section>
 
         {/* SECTION 3 - SUPORTE */}

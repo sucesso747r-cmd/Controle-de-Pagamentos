@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useStore } from "@/lib/store";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { FlaskConical, Mail, Loader2, CheckCircle, ShieldCheck, MailCheck, Copy, Eye, EyeOff } from "lucide-react";
+import { FlaskConical, Mail, Loader2, CheckCircle, ShieldCheck, MailCheck, Copy, Eye, EyeOff, BarChart3 } from "lucide-react";
 import { 
   Dialog, 
   DialogContent, 
@@ -15,6 +15,13 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 
 export default function SettingsPage() {
   const { user } = useStore();
@@ -29,12 +36,19 @@ export default function SettingsPage() {
   const [copyType, setCopyType] = useState<"cc" | "bcc">("cc");
   const [copyEmail, setCopyEmail] = useState("");
 
+  // Data Configuration State
+  const [initialYear, setInitialYear] = useState("2025");
+
   const handleSaveEmailConfig = () => {
     if (!destEmail.includes("@")) {
       toast({ variant: "destructive", title: "⚠️ Erro ao salvar. Verifique os emails e tente novamente." });
       return;
     }
     toast({ title: "✅ Configurações de email salvas com sucesso!" });
+  };
+
+  const handleSaveDataConfig = () => {
+    toast({ title: "✅ Ano inicial configurado com sucesso!" });
   };
 
   const handleTestArchive = () => {
@@ -146,6 +160,38 @@ export default function SettingsPage() {
 
             <Button onClick={handleSaveEmailConfig} className="w-full sm:w-auto">
               Salvar Configurações de Email
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* DADOS */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl font-heading flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-indigo-500" />
+              Dados
+            </CardTitle>
+            <CardDescription>Configure parâmetros de exibição dos dados.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="initial-year">Ano inicial dos dados</Label>
+              <Select value={initialYear} onValueChange={setInitialYear}>
+                <SelectTrigger id="initial-year" className="w-full sm:w-[200px]">
+                  <SelectValue placeholder="Selecione o ano" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[2020, 2021, 2022, 2023, 2024, 2025, 2026].map(y => (
+                    <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Selecione o ano mais antigo para o qual você tem dados. Anos anteriores não serão exibidos na navegação.
+              </p>
+            </div>
+            <Button onClick={handleSaveDataConfig} className="w-full sm:w-auto">
+              Salvar
             </Button>
           </CardContent>
         </Card>
