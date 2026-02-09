@@ -8,6 +8,7 @@ import path from "path";
 import fs from "fs";
 import { randomUUID } from "crypto";
 import { Resend } from "resend";
+import XLSX from "xlsx";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) {
@@ -341,6 +342,57 @@ export async function registerRoutes(
     } catch (err: any) {
       console.error("Send receipt error:", err);
       res.status(500).json({ message: "Erro ao enviar email. Tente novamente." });
+    }
+  });
+
+  app.get("/api/payments/export/:year", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const year = req.params.year as string;
+      const yearSuffix = year.slice(-2);
+
+      const userSuppliers = await storage.getSuppliers(userId);
+      const userPayments = await storage.getPayments(userId);
+
+      const months = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+
+      const rows = userSuppliers.map((supplier) => {
+        const row: Record<string, string | number> = {
+          Fornecedor: supplier.name,
+          "Serviço": supplier.serviceName,
+        };
+        months.forEach((m) => {
+          const monthYear = `${m}${yearSuffix}`;
+          const payment = userPayments.find(
+            (p) => p.supplierId === supplier.id && p.monthYear === monthYear
+          );
+          row[`${m}${yearSuffix}`] = payment ? payment.amount : "";
+        });
+        return row;
+      });
+
+      const totalRow: Record<string, string | number> = { Fornecedor: "TOTAL", "Serviço": "" };
+      months.forEach((m) => {
+        const monthYear = `${m}${yearSuffix}`;
+        const total = userPayments
+          .filter((p) => p.monthYear === monthYear)
+          .reduce((acc, p) => acc + p.amount, 0);
+        totalRow[`${m}${yearSuffix}`] = total || "";
+      });
+      rows.push(totalRow);
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, `Pagamentos ${year}`);
+
+      const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+
+      res.setHeader("Content-Disposition", `attachment; filename=pagamentos_${year}.xlsx`);
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.send(buf);
+    } catch (err: any) {
+      console.error("Export error:", err);
+      res.status(500).json({ message: "Erro ao exportar planilha." });
     }
   });
 

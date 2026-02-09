@@ -12,7 +12,8 @@ import {
   Pencil,
   Trash2,
   Loader2,
-  Mail
+  Mail,
+  Download
 } from "lucide-react";
 import { 
   Table, 
@@ -242,6 +243,15 @@ export default function DashboardPage() {
           <p className="text-muted-foreground text-sm">Olá, {user?.firstName || user?.email?.split("@")[0]}</p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => window.open(`/api/payments/export/${selectedYear}`, '_blank')}
+            data-testid="button-export-xlsx"
+          >
+            <Download className="w-4 h-4" />
+            Exportar XLSX
+          </Button>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
