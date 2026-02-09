@@ -207,6 +207,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* Testes section - hidden for now
         <Card>
           <CardHeader>
             <CardTitle className="text-xl font-heading flex items-center gap-2">
@@ -222,7 +223,9 @@ export default function SettingsPage() {
             </Button>
           </CardContent>
         </Card>
+        */}
 
+        {/* Planos section - hidden for now
         <Card className="border-dashed">
           <CardHeader>
             <CardTitle className="text-xl font-heading text-muted-foreground">Plano</CardTitle>
@@ -246,6 +249,7 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+        */}
       </div>
 
       <Dialog open={showEmailModal} onOpenChange={setShowEmailModal}>
