@@ -103,7 +103,7 @@ export default function SuppliersPage() {
     } else {
       addSupplier(data);
       toast({
-        title: "✅ Fornecedor cadastrado",
+        title: "Fornecedor cadastrado",
         description: `${data.name} foi cadastrado com sucesso.`,
         duration: 3000,
         className: "bg-emerald-50 text-emerald-900 border-emerald-200",

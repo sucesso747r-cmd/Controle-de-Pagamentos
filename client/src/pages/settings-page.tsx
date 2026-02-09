@@ -41,20 +41,20 @@ export default function SettingsPage() {
 
   const handleSaveEmailConfig = () => {
     if (!destEmail.includes("@")) {
-      toast({ variant: "destructive", title: "⚠️ Erro ao salvar. Verifique os emails e tente novamente." });
+      toast({ variant: "destructive", title: "Erro ao salvar. Verifique os emails e tente novamente." });
       return;
     }
-    toast({ title: "✅ Configurações de email salvas com sucesso!" });
+    toast({ title: "Configurações de email salvas com sucesso!" });
   };
 
   const handleSaveDataConfig = () => {
     useStore.getState().setInitialYear(parseInt(initialYear));
-    toast({ title: "✅ Ano inicial configurado com sucesso!" });
+    toast({ title: "Ano inicial configurado com sucesso!" });
   };
 
   const handleTestArchive = () => {
     toast({
-      title: "✅ ZIP de teste gerado!",
+      title: "ZIP de teste gerado!",
       description: "Arquivos mantidos no sistema.",
     });
   };
@@ -65,7 +65,7 @@ export default function SettingsPage() {
       setIsSending(false);
       setShowEmailModal(false);
       toast({
-        title: `✅ Email de teste enviado para ${testEmail}!`,
+        title: `Email de teste enviado para ${testEmail}!`,
         description: "Verifique sua caixa de entrada.",
       });
     }, 1500);
@@ -216,7 +216,7 @@ export default function SettingsPage() {
             </Button>
             <Button 
               variant="outline" 
-              className="flex-1 gap-2 border-blue-200 bg-blue-50/30 text-blue-700 hover:bg-blue-50"
+              className="flex-1 gap-2 border-orange-200 bg-orange-50/30 text-orange-700 hover:bg-orange-50"
               onClick={() => setShowEmailModal(true)}
             >
               <Mail className="w-4 h-4" />

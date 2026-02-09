@@ -165,7 +165,7 @@ export default function PaymentPage() {
         receiptUrl: keepComprovante ? editingPayment?.receiptUrl : (comprovante ? URL.createObjectURL(comprovante) : undefined),
       });
       toast({
-        title: "✅ Pagamento atualizado",
+        title: "Pagamento atualizado",
         duration: 3000,
         className: "bg-emerald-500 text-white border-none",
       });
@@ -182,7 +182,7 @@ export default function PaymentPage() {
       });
       
       toast({
-        title: "✅ Pagamento registrado! Enviando email...",
+        title: "Pagamento registrado! Enviando email...",
         duration: 3000,
         className: "bg-emerald-500 text-white border-none",
       });

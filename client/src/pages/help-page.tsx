@@ -94,7 +94,7 @@ export default function HelpCenterPage() {
                 <ol className="list-decimal pl-4 space-y-1">
                   <li>Certifique-se que todos os pagamentos do ano estão registrados</li>
                   <li>Vá para a tela Status</li>
-                  <li>Clique no botão "🗄️ Arquivar Ano [YYYY]" (disponível apenas no fim do ano)</li>
+                  <li>Clique no botão "Arquivar Ano [YYYY]" (disponível apenas no fim do ano)</li>
                   <li>Confirme a operação</li>
                   <li>Faça download do arquivo ZIP gerado</li>
                   <li>Salve o arquivo em local seguro (nuvem ou HD externo)</li>

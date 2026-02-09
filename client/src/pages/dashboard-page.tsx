@@ -177,7 +177,7 @@ export default function DashboardPage() {
   const handleConfirmArchive = () => {
     archiveYear(selectedYear);
     toast({
-      title: `✅ Ano ${selectedYear} arquivado!`,
+      title: `Ano ${selectedYear} arquivado!`,
       description: "Storage liberado.",
     });
     setShowConfirmModal(false);
@@ -202,7 +202,7 @@ export default function DashboardPage() {
                     onClick={() => setShowRealModal(true)}
                   >
                     <Archive className="w-4 h-4" />
-                    🗄️ Arquivar Ano [{selectedYear}]
+                    Arquivar Ano [{selectedYear}]
                   </Button>
                 </span>
               </TooltipTrigger>
@@ -403,7 +403,7 @@ export default function DashboardPage() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <p className="text-sm flex items-center gap-2">✅ Gerar arquivo <span className="font-mono">historico_{selectedYear}.zip</span> contendo:</p>
+              <p className="text-sm flex items-center gap-2">Gerar arquivo <span className="font-mono">historico_{selectedYear}.zip</span> contendo:</p>
               <ul className="text-xs text-muted-foreground list-disc pl-8 space-y-1">
                 <li>Planilha Excel com todos 12 meses</li>
                 <li>Todas faturas (PDFs/JPGs)</li>
@@ -434,7 +434,7 @@ export default function DashboardPage() {
       <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle className="font-heading">✅ Arquivo gerado com sucesso!</DialogTitle>
+            <DialogTitle className="font-heading">Arquivo gerado com sucesso!</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <p className="text-sm font-medium">📥 Download iniciado (verificar pasta Downloads)</p>
@@ -448,8 +448,8 @@ export default function DashboardPage() {
             </Button>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setShowConfirmModal(false)}>❌ Cancelar</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleConfirmArchive}>✅ Confirmar: Baixei o Arquivo</Button>
+            <Button variant="outline" onClick={() => setShowConfirmModal(false)}>Cancelar</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleConfirmArchive}>Confirmar: Baixei o Arquivo</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
