@@ -1,0 +1,62 @@
+# 🎯 PROMPT OTIMIZADO - BOTÃO ENVIAR POR EMAIL
+
+***
+
+## ADD "ENVIAR COMPROVANTE" BUTTON TO PAYMENT DETAILS MODAL
+
+Add a new button in the Payment Details modal footer that sends payment receipt via email using Resend API.
+
+**Button Placement:**
+- Footer of Payment Details modal (last button, right-aligned after other actions)
+- Label: "Enviar comprovante por email"
+- Icon: envelope or mail icon recommended
+- Loading state while sending
+
+**Email Functionality:**
+
+1. **Fetch Data:**
+   - Read recipient email addresses from Settings page (already saved in database)
+   - Get current payment data: fornecedor, serviço, valor, data_pagamento
+   - Retrieve both file attachments (fatura + comprovante) using existing file storage logic
+   - Get logged-in user email from Google OAuth session
+
+2. **Email Structure:**
+   - From: User's Google OAuth email
+   - To: All recipient emails from Settings (send to each recipient)
+   - Subject: `Comprovante de [Fornecedor] [Serviço] [mmmYY]` (e.g., "Comprovante de Loggi Frete jan26")
+   - Body (PT-BR):
+   ```
+   Fornecedor: [Fornecedor]
+   Serviço: [Serviço]
+   Valor: [Valor]
+   Fatura e Comprovante: Ver anexos
+   ```
+   - Attachments: Both files (fatura PDF + comprovante PDF) as base64 or file references
+
+3. **Resend API Integration:**
+   - Use existing Resend API key from environment
+   - Include both attachments in email payload
+   - Handle multipart form data or native Resend attachment format
+
+4. **Validation & Error Handling:**
+   - HTTP 400: No recipient emails configured in Settings → Show toast "Configure emails in Settings"
+   - HTTP 400: Missing file attachments → Show toast "Fatura ou comprovante não encontrado"
+   - HTTP 500: Resend failure → Show toast "Erro ao enviar email. Tente novamente."
+   - HTTP 200: Success → Show toast "Comprovante enviado com sucesso"
+
+5. **State Management:**
+   - Disable button during send (loading state)
+   - Show spinner or loading indicator
+   - Re-enable after success or error
+
+**Success Criteria:**
+- Email arrives in recipient inbox with correct subject and body in PT-BR
+- Both PDF attachments are present and downloadable
+- Sender is the logged-in Google OAuth email
+- Error messages are clear in Portuguese
+
+All UI text in Portuguese (PT-BR).
+
+***
+
+**Cole no Replit Agent e me avise quando terminar!** 🚀
