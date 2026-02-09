@@ -4,6 +4,7 @@
 Full-stack web application for supplier payment tracking with OAuth authentication (Replit Auth / Google). All UI in Portuguese (PT-BR) with minimalist, mobile-optimized design.
 
 ## Recent Changes
+- 2026-02-09: Implemented dual email provider system (Gmail SMTP + Resend API) with radio toggle in Settings
 - 2026-02-09: Added "Enviar comprovante por email" button to payment details modal (Resend API)
 - 2026-02-09: Switched from manual email/password auth to Replit Auth (OAuth with Google, GitHub, etc.)
 - 2026-02-09: Created landing page with "Entrar com Google" button for unauthenticated users
@@ -29,7 +30,7 @@ Full-stack web application for supplier payment tracking with OAuth authenticati
 - `client/src/App.tsx` - Router with protected routes
 
 ### Database Tables
-- `users` - id, email, firstName, lastName, profileImageUrl, subscriptionPlan, initialYear, email settings
+- `users` - id, email, firstName, lastName, profileImageUrl, subscriptionPlan, initialYear, email settings, emailProvider (none/resend/gmail), gmailEmail, gmailAppPassword
 - `sessions` - sid, sess, expire (Replit Auth session store)
 - `suppliers` - id, name, serviceName, isRecurring, dueDay, ownerId
 - `payments` - id, supplierId, ownerId, amount, monthYear, pixKey, dueDay, fileUrl, receiptUrl, status, isArchived
@@ -46,7 +47,9 @@ Full-stack web application for supplier payment tracking with OAuth authenticati
 
 ### Design Decisions
 - OAuth via Replit Auth (Google, GitHub, X, Apple, email)
-- Email sending via Resend API (RESEND_API_KEY secret, uses onboarding@resend.dev as sender)
+- Dual email provider: Gmail SMTP (nodemailer, free) or Resend API (RESEND_API_KEY secret)
+- Email provider selection stored per-user (emailProvider field: none/gmail/resend)
+- Gmail SMTP credentials (email + app password) stored per-user, app password stripped from API responses
 - Local file storage for portability
 - Pro plan gates analytics dashboard access
 - initialYear setting controls year navigation bounds

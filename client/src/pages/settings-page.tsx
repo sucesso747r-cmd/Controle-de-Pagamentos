@@ -29,6 +29,9 @@ export default function SettingsPage() {
   const [copyEmail, setCopyEmail] = useState(user?.copyEmail || "");
   const [initialYear, setInitialYearLocal] = useState((user?.initialYear || 2025).toString());
   const [resendApiKey, setResendApiKey] = useState("");
+  const [emailProvider, setEmailProvider] = useState(user?.emailProvider || "none");
+  const [gmailEmail, setGmailEmail] = useState(user?.gmailEmail || "");
+  const [gmailAppPassword, setGmailAppPassword] = useState("");
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -140,45 +143,95 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-xl font-heading flex items-center gap-2">
-              <Key className="w-5 h-5 text-amber-500" />Resend API Key
+              <Key className="w-5 h-5 text-amber-500" />Provedor de Email
             </CardTitle>
-            <CardDescription>Configure sua chave da API Resend para enviar comprovantes por email. Obtenha em <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">resend.com</a>.</CardDescription>
+            <CardDescription>Escolha como enviar comprovantes: Gmail SMTP (gratuito) ou Resend API.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="resend-api-key">Chave da API</Label>
-              <Input
-                id="resend-api-key"
-                type="password"
-                value={resendApiKey}
-                onChange={(e) => setResendApiKey(e.target.value)}
-                placeholder={(user as any)?.hasResendApiKey ? "••••••••••••••••••••••••••••" : "re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}
-                data-testid="input-resend-api-key"
-              />
-              {(user as any)?.hasResendApiKey && (
-                <p className="text-xs text-emerald-600 flex items-center gap-1">
-                  <CheckCircle className="w-3 h-3" />
-                  Chave configurada
-                </p>
-              )}
-            </div>
+          <CardContent className="space-y-6">
+            <RadioGroup value={emailProvider} onValueChange={setEmailProvider}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="none" id="provider-none" />
+                <Label htmlFor="provider-none" className="cursor-pointer">Nenhum (desativado)</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="gmail" id="provider-gmail" />
+                <Label htmlFor="provider-gmail" className="cursor-pointer">Gmail SMTP (gratuito)</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="resend" id="provider-resend" />
+                <Label htmlFor="provider-resend" className="cursor-pointer">Resend API</Label>
+              </div>
+            </RadioGroup>
+
+            {emailProvider === "gmail" && (
+              <div className="space-y-4 pl-4 border-l-2 border-amber-200 animate-in fade-in slide-in-from-left-2 duration-200">
+                <div className="space-y-2">
+                  <Label htmlFor="gmail-email">Email do Gmail</Label>
+                  <Input id="gmail-email" type="email" value={gmailEmail} onChange={(e) => setGmailEmail(e.target.value)} placeholder="seu-email@gmail.com" data-testid="input-gmail-email" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gmail-app-password">Senha de App do Gmail</Label>
+                  <Input id="gmail-app-password" type="password" value={gmailAppPassword} onChange={(e) => setGmailAppPassword(e.target.value)} placeholder={(user as any)?.hasGmailAppPassword ? "••••••••••••••••" : "xxxx xxxx xxxx xxxx"} data-testid="input-gmail-app-password" />
+                  <p className="text-xs text-muted-foreground">
+                    Gere em <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" className="text-primary underline">myaccount.google.com/apppasswords</a> (requer verificação em 2 etapas ativada).
+                  </p>
+                  {user?.gmailEmail && (user as any)?.hasGmailAppPassword && (
+                    <p className="text-xs text-emerald-600 flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3" />
+                      Gmail configurado ({user.gmailEmail})
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {emailProvider === "resend" && (
+              <div className="space-y-4 pl-4 border-l-2 border-amber-200 animate-in fade-in slide-in-from-left-2 duration-200">
+                <div className="space-y-2">
+                  <Label htmlFor="resend-api-key">Chave da API Resend</Label>
+                  <Input id="resend-api-key" type="password" value={resendApiKey} onChange={(e) => setResendApiKey(e.target.value)} placeholder={(user as any)?.hasResendApiKey ? "••••••••••••••••••••••••••••" : "re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"} data-testid="input-resend-api-key" />
+                  <p className="text-xs text-muted-foreground">
+                    Obtenha em <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">resend.com</a>.
+                  </p>
+                  {(user as any)?.hasResendApiKey && (
+                    <p className="text-xs text-emerald-600 flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3" />
+                      Chave configurada
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
             <Button
               onClick={() => {
-                if (!resendApiKey.trim()) {
-                  toast({ variant: "destructive", title: "Informe a chave da API." });
-                  return;
+                const data: any = { emailProvider };
+                if (emailProvider === "gmail") {
+                  if (!gmailEmail.includes("@")) {
+                    toast({ variant: "destructive", title: "Informe um email do Gmail válido." });
+                    return;
+                  }
+                  data.gmailEmail = gmailEmail;
+                  if (gmailAppPassword.trim()) {
+                    data.gmailAppPassword = gmailAppPassword.trim();
+                  }
+                } else if (emailProvider === "resend") {
+                  if (resendApiKey.trim()) {
+                    data.resendApiKey = resendApiKey.trim();
+                  }
                 }
-                updateSettingsMutation.mutate({ resendApiKey: resendApiKey.trim() }, {
+                updateSettingsMutation.mutate(data, {
                   onSuccess: () => {
-                    toast({ title: "Chave da API Resend salva com sucesso!" });
+                    toast({ title: "Provedor de email salvo com sucesso!" });
+                    setGmailAppPassword("");
                     setResendApiKey("");
                   },
                 });
               }}
               className="w-full sm:w-auto"
-              data-testid="button-save-resend-key"
+              data-testid="button-save-provider"
             >
-              Salvar Chave
+              Salvar Provedor
             </Button>
           </CardContent>
         </Card>

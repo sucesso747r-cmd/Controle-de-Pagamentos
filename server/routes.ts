@@ -8,6 +8,7 @@ import path from "path";
 import fs from "fs";
 import { randomUUID } from "crypto";
 import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import XLSX from "xlsx";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -86,7 +87,8 @@ export async function registerRoutes(
       const userId = getUserId(req);
       const data = updateSettingsSchema.parse(req.body);
       const user = await storage.updateUserSettings(userId, data);
-      res.json(user);
+      const { resendApiKey: _r, gmailAppPassword: _g, ...safeUser } = user as any;
+      res.json({ ...safeUser, hasResendApiKey: !!_r, hasGmailAppPassword: !!_g });
     } catch (err: any) {
       res.status(400).json({ message: err.message });
     }
@@ -308,34 +310,67 @@ export async function registerRoutes(
         }
       }
 
-      const apiKey = user.resendApiKey || process.env.RESEND_API_KEY;
-      if (!apiKey) {
-        return res.status(400).json({ message: "Chave da API Resend não configurada. Adicione nas Configurações." });
+      const provider = user.emailProvider || "none";
+
+      if (provider === "none") {
+        return res.status(400).json({ message: "Nenhum provedor de email configurado. Ative Gmail SMTP ou Resend nas Configurações." });
       }
 
-      const resend = new Resend(apiKey);
-      const fromEmail = user.email ? `${user.firstName || "Pagamentos"} <onboarding@resend.dev>` : "Pagamentos <onboarding@resend.dev>";
-
-      const { error } = await resend.emails.send({
-        from: fromEmail,
-        to: recipients,
-        cc: cc.length > 0 ? cc : undefined,
-        bcc: bcc.length > 0 ? bcc : undefined,
-        subject,
-        text: body,
-        attachments: attachments.map((a) => ({
-          filename: a.filename,
-          content: a.content,
-        })),
-      });
-
-      if (error) {
-        console.error("Resend error:", error);
-        const resendError = error as any;
-        if (resendError?.statusCode === 403 || resendError?.message?.includes("verify a domain")) {
-          return res.status(400).json({ message: "Domínio não verificado no Resend. Verifique um domínio em resend.com/domains ou envie apenas para o email da conta Resend." });
+      if (provider === "gmail") {
+        if (!user.gmailEmail || !user.gmailAppPassword) {
+          return res.status(400).json({ message: "Configure o email e senha de app do Gmail nas Configurações." });
         }
-        return res.status(500).json({ message: "Erro ao enviar email. Tente novamente." });
+
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: user.gmailEmail,
+            pass: user.gmailAppPassword,
+          },
+        });
+
+        await transporter.sendMail({
+          from: `${user.firstName || "Pagamentos"} <${user.gmailEmail}>`,
+          to: recipients.join(", "),
+          cc: cc.length > 0 ? cc.join(", ") : undefined,
+          bcc: bcc.length > 0 ? bcc.join(", ") : undefined,
+          subject,
+          text: body,
+          attachments: attachments.map((a) => ({
+            filename: a.filename,
+            content: a.content,
+          })),
+        });
+      } else if (provider === "resend") {
+        const apiKey = user.resendApiKey || process.env.RESEND_API_KEY;
+        if (!apiKey) {
+          return res.status(400).json({ message: "Chave da API Resend não configurada. Adicione nas Configurações." });
+        }
+
+        const resend = new Resend(apiKey);
+        const fromEmail = user.email ? `${user.firstName || "Pagamentos"} <onboarding@resend.dev>` : "Pagamentos <onboarding@resend.dev>";
+
+        const { error } = await resend.emails.send({
+          from: fromEmail,
+          to: recipients,
+          cc: cc.length > 0 ? cc : undefined,
+          bcc: bcc.length > 0 ? bcc : undefined,
+          subject,
+          text: body,
+          attachments: attachments.map((a) => ({
+            filename: a.filename,
+            content: a.content,
+          })),
+        });
+
+        if (error) {
+          console.error("Resend error:", error);
+          const resendError = error as any;
+          if (resendError?.statusCode === 403 || resendError?.message?.includes("verify a domain")) {
+            return res.status(400).json({ message: "Domínio não verificado no Resend. Verifique um domínio em resend.com/domains ou envie apenas para o email da conta Resend." });
+          }
+          return res.status(500).json({ message: "Erro ao enviar email. Tente novamente." });
+        }
       }
 
       res.json({ ok: true });
