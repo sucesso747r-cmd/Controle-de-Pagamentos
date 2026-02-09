@@ -288,6 +288,10 @@ export async function registerRoutes(
 
       if (error) {
         console.error("Resend error:", error);
+        const resendError = error as any;
+        if (resendError?.statusCode === 403 || resendError?.message?.includes("verify a domain")) {
+          return res.status(400).json({ message: "Domínio não verificado no Resend. Verifique um domínio em resend.com/domains ou envie apenas para o email da conta Resend." });
+        }
         return res.status(500).json({ message: "Erro ao enviar email. Tente novamente." });
       }
 
