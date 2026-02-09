@@ -1,0 +1,58 @@
+IMPLEMENT AUTOCOMPLETE COMBOBOX FOR SERVICES WITH DYNAMIC "CREATE NEW" OPTION
+
+Replace static dropdown with searchable combobox for Service field. Allow users to create new services on-the-fly and persist them to database.
+
+**Changes Required:**
+
+1. **Database Schema:**
+   - Table `services` (if not exists):
+     - `id` (primary key)
+     - `name` (unique, varchar, required)
+     - `created_at` (timestamp)
+   - Seed pre-defined services: Energia Eletrica, Água e Esgoto, Gás Encanado, Internet, Telefonia Móvel, Telefonia Fixa
+
+2. **Frontend Combobox Component:**
+   - Input field with dropdown list
+   - Real-time filtering as user types (case-insensitive)
+   - Show matching services from database
+   - If input doesn't match any service → show option: "+ Criar novo: [user input]"
+   - When user selects "Criar novo" option → create service in database + select it
+   - Empty state: show all pre-defined services on focus
+   - Debounce search to avoid excessive queries (300ms)
+
+3. **Backend Endpoints:**
+   - GET `/api/services` - return all services (name, id) sorted alphabetically
+   - POST `/api/services` - create new service (name required, validate not empty, not duplicate case-insensitive)
+     - Request: `{ name: "Nova Energia" }`
+     - Response: `{ id, name, created_at }`
+     - Error 400: duplicate name → Show toast "Serviço já existe"
+     - Error 400: empty name → Show toast "Nome do serviço é obrigatório"
+
+4. **UI Locations to Update:**
+   - "Registrar Pagamento" screen - Service field
+   - "Fornecedores" screen - Service field (edit/add)
+   - Both must use same combobox component (reusable)
+
+5. **Behavior:**
+   - User opens "Registrar Pagamento"
+   - Clicks Service field
+   - Sees dropdown with pre-defined services
+   - Types "eletricidade"
+   - List filters to no results
+   - Shows option: "+ Criar novo: eletricidade"
+   - Clicks option → API POST creates service → field populated with "Eletricidade"
+   - User continues form, submits payment
+   - Next time: "Eletricidade" appears in pre-defined list for everyone
+
+6. **Validation & Error Handling:**
+   - HTTP 400: Duplicate service name (case-insensitive check) → Toast "Serviço já existe"
+   - HTTP 400: Empty input → Toast "Nome do serviço é obrigatório"
+   - HTTP 500: Database error → Toast "Erro ao criar serviço"
+   - HTTP 200: Success → Service auto-selected in combobox, field populated
+
+7. **Data Persistence:**
+   - All services stored in PostgreSQL table `services`
+   - Globally accessible to all users
+   - Once created, appears for future users immediately
+
+App UI text in Portuguese (PT-BR). We can talk in English.

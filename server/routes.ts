@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertSupplierSchema, updateSettingsSchema } from "@shared/schema";
+import { insertSupplierSchema, insertServiceSchema, updateSettingsSchema } from "@shared/schema";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import multer from "multer";
 import path from "path";
@@ -40,12 +40,26 @@ function getUserId(req: Request): string {
   return (req.user as any)?.claims?.sub;
 }
 
+const DEFAULT_SERVICES = [
+  "Energia Elétrica", "Água e Esgoto", "Gás Encanado", "Internet",
+  "Telefonia Móvel", "Telefonia Fixa", "Cartão de Crédito VISA",
+  "Cartão de Crédito Mastercard", "Cartão de Crédito Elo",
+  "Aluguel", "Condomínio", "IPTU", "Seguro", "Consultoria", "Manutenção"
+];
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
   await setupAuth(app);
   registerAuthRoutes(app);
+
+  const existing = await storage.getServices();
+  if (existing.length === 0) {
+    for (const name of DEFAULT_SERVICES) {
+      try { await storage.createService({ name }); } catch {}
+    }
+  }
 
   app.use("/uploads", isAuthenticated, async (req, res, next) => {
     const filename = path.basename(req.path);
@@ -74,6 +88,33 @@ export async function registerRoutes(
       res.json(user);
     } catch (err: any) {
       res.status(400).json({ message: err.message });
+    }
+  });
+
+  // SERVICES
+  app.get("/api/services", isAuthenticated, async (_req, res) => {
+    const list = await storage.getServices();
+    res.json(list);
+  });
+
+  app.post("/api/services", isAuthenticated, async (req, res) => {
+    try {
+      const data = insertServiceSchema.parse(req.body);
+      if (!data.name.trim()) {
+        return res.status(400).json({ message: "Nome do serviço é obrigatório" });
+      }
+      const existing = await storage.getServices();
+      const duplicate = existing.find(s => s.name.toLowerCase() === data.name.trim().toLowerCase());
+      if (duplicate) {
+        return res.status(400).json({ message: "Serviço já existe" });
+      }
+      const service = await storage.createService({ name: data.name.trim() });
+      res.json(service);
+    } catch (err: any) {
+      if (err.code === "23505") {
+        return res.status(400).json({ message: "Serviço já existe" });
+      }
+      res.status(400).json({ message: err.message || "Erro ao criar serviço" });
     }
   });
 

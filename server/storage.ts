@@ -1,14 +1,18 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { db } from "./db";
 import {
-  users, suppliers, payments,
+  users, suppliers, payments, services,
   type User, type Supplier, type InsertSupplier,
   type Payment, type InsertPayment,
+  type Service, type InsertService,
 } from "@shared/schema";
 
 export interface IStorage {
   getUser(userId: string): Promise<User | undefined>;
   updateUserSettings(userId: string, settings: Partial<User>): Promise<User>;
+
+  getServices(): Promise<Service[]>;
+  createService(data: InsertService): Promise<Service>;
 
   getSuppliers(ownerId: string): Promise<Supplier[]>;
   getSupplier(id: string, ownerId: string): Promise<Supplier | undefined>;
@@ -28,6 +32,15 @@ export class DatabaseStorage implements IStorage {
   async getUser(userId: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, userId));
     return user;
+  }
+
+  async getServices(): Promise<Service[]> {
+    return db.select().from(services).orderBy(services.name);
+  }
+
+  async createService(data: InsertService): Promise<Service> {
+    const [service] = await db.insert(services).values(data).returning();
+    return service;
   }
 
   async updateUserSettings(userId: string, settings: Partial<User>): Promise<User> {
