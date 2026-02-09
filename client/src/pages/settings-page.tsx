@@ -87,7 +87,7 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-muted-foreground">Nome:</Label>
-                <Input value={`${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "Usuário"} readOnly className="bg-muted/50" data-testid="text-user-name" />
+                <Input value={`${user?.firstName || ""} ${user?.lastName || ""}`.trim() || user?.email?.split('@')[0] || "Usuário"} readOnly className="bg-muted/50" data-testid="text-user-name" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-muted-foreground">Email:</Label>
