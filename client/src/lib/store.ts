@@ -6,6 +6,7 @@ export interface User {
   name: string;
   email: string;
   avatarUrl?: string;
+  subscriptionPlan: "Starter" | "Pro Version";
 }
 
 export interface Supplier {
@@ -51,7 +52,12 @@ interface AppState {
 }
 
 export const useStore = create<AppState>((set) => ({
-  user: null,
+  user: {
+    id: 'u1',
+    name: 'Admin User',
+    email: 'admin@exemplo.com.br',
+    subscriptionPlan: 'Starter'
+  },
   selectedYear: 2026,
   initialYear: 2025,
   suppliers: [

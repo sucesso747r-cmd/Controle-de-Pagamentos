@@ -24,17 +24,32 @@ import {
   PieChart, 
   Pie, 
   Cell,
-  LineChart,
-  Line,
   Legend
 } from 'recharts';
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 export default function AnalyticsDashboard() {
-  const { payments, suppliers, selectedYear, setYear } = useStore();
+  const { payments, suppliers, selectedYear, initialYear, user } = useStore();
   const [year, setYearLocal] = useState(selectedYear.toString());
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (user && user.subscriptionPlan === "Starter") {
+      toast({
+        title: "Acesso Restrito",
+        description: "⚠️ Dashboard Analítico disponível apenas no Plano Pro. Faça upgrade para acessar relatórios avançados.",
+        variant: "destructive"
+      });
+      setLocation("/");
+    }
+  }, [user, setLocation, toast]);
+
+  if (!user || user.subscriptionPlan === "Starter") return null;
 
   const currentYearPayments = payments.filter(p => p.monthYear.endsWith(year.slice(-2)));
   
@@ -65,6 +80,12 @@ export default function AnalyticsDashboard() {
   const formatCurrency = (val: number) => 
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
+  const currentYear = new Date().getFullYear();
+  const years = Array.from(
+    { length: currentYear - initialYear + 1 }, 
+    (_, i) => initialYear + i
+  ).reverse();
+
   return (
     <div className="space-y-8 pb-10">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -79,7 +100,7 @@ export default function AnalyticsDashboard() {
               <SelectValue placeholder="Ano" />
             </SelectTrigger>
             <SelectContent>
-              {[2024, 2025, 2026].map(y => (
+              {years.map(y => (
                 <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
               ))}
             </SelectContent>
@@ -87,7 +108,7 @@ export default function AnalyticsDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Gasto {year}</CardTitle>
@@ -95,15 +116,6 @@ export default function AnalyticsDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(totalGasto)}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Média Mensal</CardTitle>
-            <Calendar className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(mediaMensal)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -153,21 +165,6 @@ export default function AnalyticsDashboard() {
         </Card>
 
         <Card className="p-6">
-          <CardTitle className="text-lg font-heading mb-4">Tendência Mensal</CardTitle>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlyTotals}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" />
-                <YAxis hide />
-                <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                <Line type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        <Card className="p-6">
           <CardTitle className="text-lg font-heading mb-4">Top 5 Fornecedores Mais Caros</CardTitle>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -182,7 +179,7 @@ export default function AnalyticsDashboard() {
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-6 lg:col-span-2">
           <CardTitle className="text-lg font-heading mb-4">Comparativo Mensal</CardTitle>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
