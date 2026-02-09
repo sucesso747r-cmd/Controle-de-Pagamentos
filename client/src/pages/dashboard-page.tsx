@@ -55,7 +55,7 @@ const MONTHS = [
 ];
 
 export default function DashboardPage() {
-  const { payments, suppliers, user, selectedYear, setYear, deletePayment, archiveYear } = useStore();
+  const { payments, suppliers, user, selectedYear, initialYear, setYear, deletePayment, archiveYear } = useStore();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
@@ -69,6 +69,16 @@ export default function DashboardPage() {
 
   const currentYearSuffix = selectedYear.toString().slice(-2);
   const isRealButtonEnabled = false; // For MVP simulation, real year end is false
+
+  const handlePrevYear = () => {
+    if (selectedYear > initialYear) {
+      setYear(selectedYear - 1);
+    }
+  };
+
+  const handleNextYear = () => {
+    setYear(selectedYear + 1);
+  };
 
   const handleCellClick = (supplier: Supplier, monthId: string) => {
     const monthYear = `${monthId}${currentYearSuffix}`;
@@ -209,11 +219,16 @@ export default function DashboardPage() {
       <Card className="overflow-hidden border-none shadow-xl bg-card/50 backdrop-blur-sm">
         <CardContent className="p-0">
           <div className="bg-muted/30 p-4 border-b flex items-center justify-center gap-6">
-            <Button variant="ghost" size="icon" onClick={() => setYear(selectedYear - 1)}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handlePrevYear}
+              disabled={selectedYear <= initialYear}
+            >
               <ChevronLeft className="w-5 h-5" />
             </Button>
             <span className="text-xl font-bold font-heading">{selectedYear}</span>
-            <Button variant="ghost" size="icon" onClick={() => setYear(selectedYear + 1)}>
+            <Button variant="ghost" size="icon" onClick={handleNextYear}>
               <ChevronRight className="w-5 h-5" />
             </Button>
           </div>

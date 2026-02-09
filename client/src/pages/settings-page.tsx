@@ -37,7 +37,7 @@ export default function SettingsPage() {
   const [copyEmail, setCopyEmail] = useState("");
 
   // Data Configuration State
-  const [initialYear, setInitialYear] = useState("2025");
+  const [initialYear, setInitialYearLocal] = useState(useStore.getState().initialYear.toString());
 
   const handleSaveEmailConfig = () => {
     if (!destEmail.includes("@")) {
@@ -48,6 +48,7 @@ export default function SettingsPage() {
   };
 
   const handleSaveDataConfig = () => {
+    useStore.getState().setInitialYear(parseInt(initialYear));
     toast({ title: "✅ Ano inicial configurado com sucesso!" });
   };
 
@@ -176,7 +177,7 @@ export default function SettingsPage() {
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="initial-year">Ano inicial dos dados</Label>
-              <Select value={initialYear} onValueChange={setInitialYear}>
+              <Select value={initialYear} onValueChange={setInitialYearLocal}>
                 <SelectTrigger id="initial-year" className="w-full sm:w-[200px]">
                   <SelectValue placeholder="Selecione o ano" />
                 </SelectTrigger>

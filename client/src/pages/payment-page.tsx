@@ -111,17 +111,31 @@ export default function PaymentPage() {
     if (!file) return;
 
     const isMaxSize = file.size <= 10 * 1024 * 1024;
-    const isAccepted = type === 'fatura' 
-      ? ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'].includes(file.type)
-      : ['image/jpeg', 'image/jpg', 'image/png'].includes(file.type);
+    
+    // Accept all formats except executables
+    const executableTypes = [
+      'application/x-msdownload', // .exe
+      'application/x-sh', // .sh
+      'application/x-apple-diskimage', // .dmg
+      'application/x-ms-shortcut', // .lnk
+      'application/javascript', // .js (potentially dangerous if executed)
+      'text/javascript',
+      'application/x-python-code', // .py
+    ];
+    
+    const isExecutable = executableTypes.includes(file.type) || 
+                       file.name.toLowerCase().endsWith('.exe') || 
+                       file.name.toLowerCase().endsWith('.bat') || 
+                       file.name.toLowerCase().endsWith('.sh') || 
+                       file.name.toLowerCase().endsWith('.cmd');
 
     if (!isMaxSize) {
       toast({ variant: "destructive", title: "Arquivo maior que 10MB. Selecione outro." });
       return;
     }
 
-    if (!isAccepted) {
-      toast({ variant: "destructive", title: "Formato não aceito. Use PDF ou JPG." });
+    if (isExecutable) {
+      toast({ variant: "destructive", title: "Arquivos executáveis não são permitidos por segurança." });
       return;
     }
 
@@ -360,7 +374,7 @@ export default function PaymentPage() {
               ) : (
                 <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-300">
                   <div className="space-y-4">
-                    <Label className="text-base font-semibold">Fatura <span className="text-destructive">*</span> (PDF ou JPG)</Label>
+                    <Label className="text-base font-semibold">Fatura <span className="text-destructive">*</span></Label>
                     
                     {editingId && editingPayment?.fileUrl && (
                       <RadioGroup 
@@ -416,7 +430,7 @@ export default function PaymentPage() {
                   </div>
 
                   <div className="space-y-4">
-                    <Label className="text-base font-semibold">Comprovante <span className="text-destructive">*</span> (JPG)</Label>
+                    <Label className="text-base font-semibold">Comprovante <span className="text-destructive">*</span></Label>
                     
                     {editingId && editingPayment?.receiptUrl && (
                       <RadioGroup 

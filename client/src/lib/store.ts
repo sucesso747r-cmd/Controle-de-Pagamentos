@@ -36,9 +36,11 @@ interface AppState {
   suppliers: Supplier[];
   payments: Payment[];
   selectedYear: number;
+  initialYear: number;
   login: (user: User) => void;
   logout: () => void;
   setYear: (year: number) => void;
+  setInitialYear: (year: number) => void;
   addSupplier: (supplier: Omit<Supplier, 'id' | 'ownerId'>) => void;
   updateSupplier: (id: string, supplier: Partial<Omit<Supplier, 'id' | 'ownerId'>>) => void;
   deleteSupplier: (id: string) => void;
@@ -51,6 +53,7 @@ interface AppState {
 export const useStore = create<AppState>((set) => ({
   user: null,
   selectedYear: 2026,
+  initialYear: 2025,
   suppliers: [
     { id: '1', name: 'Vivo', serviceName: 'Internet Fibra', isRecurring: true, dueDay: 10, ownerId: 'u1' },
     { id: '2', name: 'Sabesp', serviceName: 'Água e Esgoto', isRecurring: true, dueDay: 15, ownerId: 'u1' },
@@ -65,6 +68,7 @@ export const useStore = create<AppState>((set) => ({
   login: (user) => set({ user }),
   logout: () => set({ user: null }),
   setYear: (year) => set({ selectedYear: year }),
+  setInitialYear: (year) => set({ initialYear: year }),
   addSupplier: (newSupplier) => set((state) => ({
     suppliers: [...state.suppliers, { 
       ...newSupplier, 
