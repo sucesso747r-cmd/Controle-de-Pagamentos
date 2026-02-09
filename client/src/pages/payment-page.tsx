@@ -42,7 +42,7 @@ const paymentSchema = z.object({
   amount: z.string().min(1, "Valor: campo obrigatório"),
   monthYear: z.string().min(1, "Mês/ano: campo obrigatório"),
   dueDay: z.string().optional().refine(val => !val || (parseInt(val) >= 1 && parseInt(val) <= 31), { message: "Dia do vencimento: deve ser entre 1 e 31" }),
-  pixKey: z.string().min(10, "Chave Pix: mínimo 10 caracteres"),
+  pixKey: z.string().optional(),
 });
 
 type PaymentFormValues = z.infer<typeof paymentSchema>;
@@ -280,7 +280,7 @@ export default function PaymentPage() {
                     )} />
                     <FormField control={form.control} name="pixKey" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Chave Pix <span className="text-destructive">*</span></FormLabel>
+                        <FormLabel>Chave Pix</FormLabel>
                         <FormControl><Input className="h-12" placeholder="Digite a chave Pix" {...field} data-testid="input-pix-key" /></FormControl>
                         <FormMessage className="text-destructive font-medium" />
                       </FormItem>
