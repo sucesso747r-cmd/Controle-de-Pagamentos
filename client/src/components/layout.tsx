@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/hooks/use-auth";
 import { 
   LayoutDashboard, 
   PlusCircle, 
@@ -32,7 +32,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   ];
 
   const handleLogout = () => {
-    logout.mutate();
+    logout();
   };
 
   const NavContent = () => (
@@ -45,7 +45,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           Gestão
         </h1>
         <p className="text-sm text-muted-foreground mt-2">
-          Olá, {user?.name?.split(" ")[0]}
+          Olá, {user?.firstName || user?.email?.split("@")[0]}
         </p>
       </div>
 

@@ -1,21 +1,10 @@
+export * from "./models/auth";
+
 import { sql } from "drizzle-orm";
 import { pgTable, text, varchar, integer, boolean, real, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-
-export const users = pgTable("users", {
-  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  email: text("email").notNull().unique(),
-  password: text("password").notNull(),
-  avatarUrl: text("avatar_url"),
-  subscriptionPlan: text("subscription_plan").notNull().default("Starter"),
-  initialYear: integer("initial_year").notNull().default(2025),
-  destEmail: text("dest_email"),
-  sendCopy: boolean("send_copy").notNull().default(false),
-  copyType: text("copy_type").default("cc"),
-  copyEmail: text("copy_email"),
-});
+import { users } from "./models/auth";
 
 export const suppliers = pgTable("suppliers", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
@@ -41,17 +30,6 @@ export const payments = pgTable("payments", {
   registrationDate: timestamp("registration_date").notNull().defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).omit({ id: true });
-export const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-});
-export const registerSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  password: z.string().min(6),
-});
-
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, ownerId: true });
 export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true, ownerId: true, registrationDate: true, isArchived: true });
 
@@ -63,8 +41,6 @@ export const updateSettingsSchema = z.object({
   copyEmail: z.string().optional(),
 });
 
-export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Supplier = typeof suppliers.$inferSelect;
 export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 export type Payment = typeof payments.$inferSelect;

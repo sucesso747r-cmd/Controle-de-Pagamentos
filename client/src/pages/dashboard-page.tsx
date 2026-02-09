@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { useAuth, type AuthUser } from "@/lib/auth";
+import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
@@ -221,7 +221,7 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight font-heading">Status</h2>
-          <p className="text-muted-foreground text-sm">Olá, {user?.name}</p>
+          <p className="text-muted-foreground text-sm">Olá, {user?.firstName || user?.email?.split("@")[0]}</p>
         </div>
         <div className="flex gap-2">
           <TooltipProvider>

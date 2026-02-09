@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/hooks/use-auth";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { FlaskConical, Mail, Loader2, CheckCircle, ShieldCheck, MailCheck, BarChart3 } from "lucide-react";
@@ -35,7 +35,7 @@ export default function SettingsPage() {
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
     },
   });
 
@@ -86,7 +86,7 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-muted-foreground">Nome:</Label>
-                <Input value={user?.name || "Usuário"} readOnly className="bg-muted/50" data-testid="text-user-name" />
+                <Input value={`${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "Usuário"} readOnly className="bg-muted/50" data-testid="text-user-name" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-muted-foreground">Email:</Label>

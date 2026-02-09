@@ -1,24 +1,12 @@
 import { eq, and } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
-import pg from "pg";
+import { db } from "./db";
 import {
   users, suppliers, payments,
-  type User, type InsertUser,
-  type Supplier, type InsertSupplier,
+  type User, type Supplier, type InsertSupplier,
   type Payment, type InsertPayment,
 } from "@shared/schema";
-import bcrypt from "bcryptjs";
-
-const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-});
-
-export const db = drizzle(pool);
 
 export interface IStorage {
-  createUser(data: { name: string; email: string; password: string }): Promise<User>;
-  getUserByEmail(email: string): Promise<User | undefined>;
-  getUserById(id: string): Promise<User | undefined>;
   updateUserSettings(userId: string, settings: Partial<User>): Promise<User>;
 
   getSuppliers(ownerId: string): Promise<Supplier[]>;
@@ -36,28 +24,8 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  async createUser(data: { name: string; email: string; password: string }): Promise<User> {
-    const hashedPassword = await bcrypt.hash(data.password, 10);
-    const [user] = await db.insert(users).values({
-      name: data.name,
-      email: data.email,
-      password: hashedPassword,
-    }).returning();
-    return user;
-  }
-
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user;
-  }
-
-  async getUserById(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
-  }
-
   async updateUserSettings(userId: string, settings: Partial<User>): Promise<User> {
-    const { id, password, email, ...safeSettings } = settings as any;
+    const { id, email, firstName, lastName, profileImageUrl, createdAt, updatedAt, ...safeSettings } = settings as any;
     const [user] = await db.update(users)
       .set(safeSettings)
       .where(eq(users.id, userId))
