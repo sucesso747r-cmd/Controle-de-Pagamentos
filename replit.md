@@ -4,6 +4,7 @@
 Full-stack web application for supplier payment tracking with OAuth authentication (Replit Auth / Google). All UI in Portuguese (PT-BR) with minimalist, mobile-optimized design.
 
 ## Recent Changes
+- 2026-02-09: Added "Enviar comprovante por email" button to payment details modal (Resend API)
 - 2026-02-09: Switched from manual email/password auth to Replit Auth (OAuth with Google, GitHub, etc.)
 - 2026-02-09: Created landing page with "Entrar com Google" button for unauthenticated users
 - 2026-02-09: Updated user model to use OAuth claims (firstName, lastName, profileImageUrl)
@@ -41,9 +42,11 @@ Full-stack web application for supplier payment tracking with OAuth authenticati
 - GET/POST/PATCH/DELETE /api/suppliers - Supplier CRUD
 - GET/POST/PATCH/DELETE /api/payments - Payment CRUD with file upload
 - POST /api/payments/archive/:year - Archive year's files
+- POST /api/payments/:id/send-receipt - Send payment receipt email via Resend API
 
 ### Design Decisions
 - OAuth via Replit Auth (Google, GitHub, X, Apple, email)
+- Email sending via Resend API (RESEND_API_KEY secret, uses onboarding@resend.dev as sender)
 - Local file storage for portability
 - Pro plan gates analytics dashboard access
 - initialYear setting controls year navigation bounds

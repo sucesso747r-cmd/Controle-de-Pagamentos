@@ -11,7 +11,8 @@ import {
   Receipt,
   Pencil,
   Trash2,
-  Loader2
+  Loader2,
+  Mail
 } from "lucide-react";
 import { 
   Table, 
@@ -109,6 +110,23 @@ export default function DashboardPage() {
       toast({ title: "Pagamento excluído", description: "O registro e os arquivos foram removidos com sucesso." });
       setPaymentToDelete(null);
       setSelectedPayment(null);
+    },
+  });
+
+  const sendReceiptMutation = useMutation({
+    mutationFn: async (paymentId: string) => {
+      const res = await apiRequest("POST", `/api/payments/${paymentId}/send-receipt`);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Erro ao enviar email");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Comprovante enviado com sucesso", description: "O email foi enviado para os destinatários configurados." });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
     },
   });
 
@@ -427,7 +445,23 @@ export default function DashboardPage() {
               )}
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="flex-col gap-2 sm:flex-col">
+            {selectedPayment && !selectedPayment.isArchived && (
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                disabled={sendReceiptMutation.isPending || (!selectedPayment.fileUrl && !selectedPayment.receiptUrl)}
+                onClick={() => sendReceiptMutation.mutate(selectedPayment.id)}
+                data-testid="button-send-receipt"
+              >
+                {sendReceiptMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Mail className="w-4 h-4" />
+                )}
+                {sendReceiptMutation.isPending ? "Enviando..." : "Enviar comprovante por email"}
+              </Button>
+            )}
             <Button variant="outline" className="w-full" onClick={() => setSelectedPayment(null)}>Fechar</Button>
           </DialogFooter>
         </DialogContent>

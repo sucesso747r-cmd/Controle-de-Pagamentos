@@ -7,6 +7,7 @@ import {
 } from "@shared/schema";
 
 export interface IStorage {
+  getUser(userId: string): Promise<User | undefined>;
   updateUserSettings(userId: string, settings: Partial<User>): Promise<User>;
 
   getSuppliers(ownerId: string): Promise<Supplier[]>;
@@ -24,6 +25,11 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  async getUser(userId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    return user;
+  }
+
   async updateUserSettings(userId: string, settings: Partial<User>): Promise<User> {
     const { id, email, firstName, lastName, profileImageUrl, createdAt, updatedAt, ...safeSettings } = settings as any;
     const [user] = await db.update(users)

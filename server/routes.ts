@@ -7,6 +7,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { randomUUID } from "crypto";
+import { Resend } from "resend";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) {
@@ -200,6 +201,101 @@ export async function registerRoutes(
     const yearSuffix = (req.params.year as string).slice(-2);
     await storage.archiveYear(userId, yearSuffix);
     res.json({ ok: true });
+  });
+
+  app.post("/api/payments/:id/send-receipt", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const paymentId = req.params.id as string;
+
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(401).json({ message: "Usuário não encontrado" });
+
+      if (!user.destEmail) {
+        return res.status(400).json({ message: "Configure os emails de destino nas Configurações." });
+      }
+
+      const payment = await storage.getPayment(paymentId, userId);
+      if (!payment) return res.status(404).json({ message: "Pagamento não encontrado" });
+
+      const supplier = await storage.getSupplier(payment.supplierId, userId);
+      if (!supplier) return res.status(404).json({ message: "Fornecedor não encontrado" });
+
+      const attachments: { filename: string; content: Buffer }[] = [];
+
+      if (payment.fileUrl) {
+        const faturaPath = path.join(uploadsDir, path.basename(payment.fileUrl));
+        if (fs.existsSync(faturaPath)) {
+          attachments.push({
+            filename: `fatura_${supplier.name}_${payment.monthYear}${path.extname(faturaPath)}`,
+            content: fs.readFileSync(faturaPath),
+          });
+        }
+      }
+
+      if (payment.receiptUrl) {
+        const receiptPath = path.join(uploadsDir, path.basename(payment.receiptUrl));
+        if (fs.existsSync(receiptPath)) {
+          attachments.push({
+            filename: `comprovante_${supplier.name}_${payment.monthYear}${path.extname(receiptPath)}`,
+            content: fs.readFileSync(receiptPath),
+          });
+        }
+      }
+
+      if (attachments.length === 0) {
+        return res.status(400).json({ message: "Fatura ou comprovante não encontrado." });
+      }
+
+      const formatCurrency = (val: number) =>
+        new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
+
+      const subject = `Comprovante de ${supplier.name} ${supplier.serviceName} ${payment.monthYear}`;
+      const body = `Fornecedor: ${supplier.name}\nServiço: ${supplier.serviceName}\nValor: ${formatCurrency(payment.amount)}\nFatura e Comprovante: Ver anexos`;
+
+      const recipients = user.destEmail.split(",").map((e: string) => e.trim()).filter(Boolean);
+      const cc: string[] = [];
+      const bcc: string[] = [];
+
+      if (user.sendCopy && user.copyEmail) {
+        const copyEmails = user.copyEmail.split(",").map((e: string) => e.trim()).filter(Boolean);
+        if (user.copyType === "bcc") {
+          bcc.push(...copyEmails);
+        } else {
+          cc.push(...copyEmails);
+        }
+      }
+
+      if (!process.env.RESEND_API_KEY) {
+        return res.status(500).json({ message: "Chave da API de email não configurada. Contate o administrador." });
+      }
+
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      const fromEmail = user.email ? `${user.firstName || "Pagamentos"} <onboarding@resend.dev>` : "Pagamentos <onboarding@resend.dev>";
+
+      const { error } = await resend.emails.send({
+        from: fromEmail,
+        to: recipients,
+        cc: cc.length > 0 ? cc : undefined,
+        bcc: bcc.length > 0 ? bcc : undefined,
+        subject,
+        text: body,
+        attachments: attachments.map((a) => ({
+          filename: a.filename,
+          content: a.content,
+        })),
+      });
+
+      if (error) {
+        console.error("Resend error:", error);
+        return res.status(500).json({ message: "Erro ao enviar email. Tente novamente." });
+      }
+
+      res.json({ ok: true });
+    } catch (err: any) {
+      console.error("Send receipt error:", err);
+      res.status(500).json({ message: "Erro ao enviar email. Tente novamente." });
+    }
   });
 
   return httpServer;
