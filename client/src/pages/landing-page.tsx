@@ -121,7 +121,7 @@ export default function LandingPage() {
               </div>
               <h3 className="font-bold text-lg mb-2">Relatórios</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Dashboard analítico com gráficos de despesas por serviço, fornecedor e comparativo mensal.
+                Dashboard analítico com gráficos de despesas por serviço, fornecedor e comparativo mensal. <em>(em breve)</em>
               </p>
             </div>
           </div>
