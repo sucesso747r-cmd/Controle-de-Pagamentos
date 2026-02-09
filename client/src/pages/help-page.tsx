@@ -61,7 +61,7 @@ export default function HelpCenterPage() {
           </div>
         </section>
 
-        {/* SECTION 2 - GUIAS E TUTORIAIS */}
+        {/* SECTION 2 - GUIAS E TUTORIAIS - hidden for now
         <section className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg text-primary">
@@ -135,8 +135,9 @@ export default function HelpCenterPage() {
             </AccordionItem>
           </Accordion>
         </section>
+        */}
 
-        {/* SECTION 3 - SUPORTE */}
+        {/* SECTION 3 - SUPORTE - hidden for now
         <section>
           <Card className="bg-primary/5 border-primary/20">
             <CardContent className="p-8 flex flex-col items-center text-center space-y-6">
@@ -163,6 +164,7 @@ export default function HelpCenterPage() {
             </CardContent>
           </Card>
         </section>
+        */}
       </div>
     </div>
   );
