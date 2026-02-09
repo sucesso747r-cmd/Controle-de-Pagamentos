@@ -130,7 +130,7 @@ export default function LandingPage() {
 
       <footer className="border-t border-slate-200/50 bg-white/50 backdrop-blur-sm py-6">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} Gestão de Pagamentos. Todos os direitos reservados.
+          &copy; {new Date().getFullYear()} i9star.com.br. Todos os direitos reservados.
         </div>
       </footer>
     </div>
