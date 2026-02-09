@@ -50,6 +50,9 @@ export const updateSettingsSchema = z.object({
   copyType: z.string().optional(),
   copyEmail: z.string().optional(),
   resendApiKey: z.string().optional(),
+  emailProvider: z.enum(["none", "resend", "gmail"]).optional(),
+  gmailEmail: z.string().optional(),
+  gmailAppPassword: z.string().optional(),
 });
 
 export type Supplier = typeof suppliers.$inferSelect;
