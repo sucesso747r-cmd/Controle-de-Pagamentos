@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { FlaskConical, Mail, Loader2, CheckCircle, ShieldCheck, MailCheck, BarChart3 } from "lucide-react";
+import { FlaskConical, Mail, Loader2, CheckCircle, ShieldCheck, MailCheck, BarChart3, Key } from "lucide-react";
 import { 
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -28,6 +28,7 @@ export default function SettingsPage() {
   const [copyType, setCopyType] = useState<"cc" | "bcc">((user?.copyType as "cc" | "bcc") || "cc");
   const [copyEmail, setCopyEmail] = useState(user?.copyEmail || "");
   const [initialYear, setInitialYearLocal] = useState((user?.initialYear || 2025).toString());
+  const [resendApiKey, setResendApiKey] = useState("");
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -133,6 +134,52 @@ export default function SettingsPage() {
               )}
             </div>
             <Button onClick={handleSaveEmailConfig} className="w-full sm:w-auto" data-testid="button-save-email">Salvar Configurações de Email</Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl font-heading flex items-center gap-2">
+              <Key className="w-5 h-5 text-amber-500" />Resend API Key
+            </CardTitle>
+            <CardDescription>Configure sua chave da API Resend para enviar comprovantes por email. Obtenha em <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">resend.com</a>.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="resend-api-key">Chave da API</Label>
+              <Input
+                id="resend-api-key"
+                type="password"
+                value={resendApiKey}
+                onChange={(e) => setResendApiKey(e.target.value)}
+                placeholder={(user as any)?.hasResendApiKey ? "••••••••••••••••••••••••••••" : "re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}
+                data-testid="input-resend-api-key"
+              />
+              {(user as any)?.hasResendApiKey && (
+                <p className="text-xs text-emerald-600 flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3" />
+                  Chave configurada
+                </p>
+              )}
+            </div>
+            <Button
+              onClick={() => {
+                if (!resendApiKey.trim()) {
+                  toast({ variant: "destructive", title: "Informe a chave da API." });
+                  return;
+                }
+                updateSettingsMutation.mutate({ resendApiKey: resendApiKey.trim() }, {
+                  onSuccess: () => {
+                    toast({ title: "Chave da API Resend salva com sucesso!" });
+                    setResendApiKey("");
+                  },
+                });
+              }}
+              className="w-full sm:w-auto"
+              data-testid="button-save-resend-key"
+            >
+              Salvar Chave
+            </Button>
           </CardContent>
         </Card>
 

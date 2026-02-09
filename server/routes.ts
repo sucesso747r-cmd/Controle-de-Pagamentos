@@ -266,11 +266,12 @@ export async function registerRoutes(
         }
       }
 
-      if (!process.env.RESEND_API_KEY) {
-        return res.status(500).json({ message: "Chave da API de email não configurada. Contate o administrador." });
+      const apiKey = user.resendApiKey || process.env.RESEND_API_KEY;
+      if (!apiKey) {
+        return res.status(400).json({ message: "Chave da API Resend não configurada. Adicione nas Configurações." });
       }
 
-      const resend = new Resend(process.env.RESEND_API_KEY);
+      const resend = new Resend(apiKey);
       const fromEmail = user.email ? `${user.firstName || "Pagamentos"} <onboarding@resend.dev>` : "Pagamentos <onboarding@resend.dev>";
 
       const { error } = await resend.emails.send({

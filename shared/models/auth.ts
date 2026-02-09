@@ -27,6 +27,7 @@ export const users = pgTable("users", {
   sendCopy: boolean("send_copy").notNull().default(false),
   copyType: text("copy_type").default("cc"),
   copyEmail: text("copy_email"),
+  resendApiKey: text("resend_api_key"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

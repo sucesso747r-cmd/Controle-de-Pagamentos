@@ -39,6 +39,7 @@ export const updateSettingsSchema = z.object({
   sendCopy: z.boolean().optional(),
   copyType: z.string().optional(),
   copyEmail: z.string().optional(),
+  resendApiKey: z.string().optional(),
 });
 
 export type Supplier = typeof suppliers.$inferSelect;
