@@ -169,7 +169,7 @@ export default function PaymentPage() {
     formData.append("supplierId", data.supplierId);
     formData.append("amount", numericAmount.toString());
     formData.append("monthYear", data.monthYear);
-    formData.append("pixKey", data.pixKey);
+    formData.append("pixKey", data.pixKey || "");
     if (data.dueDay) formData.append("dueDay", data.dueDay);
     formData.append("status", "paid");
 

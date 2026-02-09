@@ -125,7 +125,7 @@ export default function HelpCenterPage() {
               <AccordionTrigger className="hover:no-underline font-medium">Dicas para organizar fornecedores?</AccordionTrigger>
               <AccordionContent className="text-muted-foreground space-y-2">
                 <ul className="list-disc pl-4 space-y-1">
-                  <li>Use nomes claros e consistentes (ex: "CPFL Energia" ao invés de "cpfl" ou "Companhia Luz")</li>
+                  <li>Use nomes claros e consistentes (ex: "Enel" ao invés de "cpfl" ou "Companhia Luz")</li>
                   <li>Marque fornecedores mensais como "Recorrente" para facilitar visualização</li>
                   <li>Cadastre o dia de vencimento para planejar fluxo de caixa</li>
                   <li>Use o campo "Serviço" de forma padronizada (selecione da lista sempre que possível)</li>

@@ -67,7 +67,7 @@ export default function LandingPage() {
                     </div>
                   </div>
                   <div className="space-y-3">
-                    {["CPFL Energia", "Sabesp Água", "Vivo Internet"].map((name, i) => (
+                    {["Enel", "Sabesp Água", "Vivo Internet"].map((name, i) => (
                       <div key={name} className="flex items-center gap-3">
                         <span className="text-sm font-medium w-32 truncate">{name}</span>
                         <div className="flex gap-1 flex-1">
