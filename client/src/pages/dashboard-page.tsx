@@ -1,5 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { useStore, Payment, Supplier } from "@/lib/store";
+import { useAuth, type AuthUser } from "@/lib/auth";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { 
   ChevronLeft, 
@@ -47,6 +49,29 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import SupplierEditModal from "@/components/supplier-edit-modal";
 
+interface Supplier {
+  id: string;
+  name: string;
+  serviceName: string;
+  isRecurring: boolean;
+  dueDay: number | null;
+  ownerId: string;
+}
+
+interface Payment {
+  id: string;
+  supplierId: string;
+  amount: number;
+  monthYear: string;
+  pixKey: string | null;
+  dueDay: number | null;
+  fileUrl: string | null;
+  receiptUrl: string | null;
+  registrationDate: string;
+  isArchived: boolean;
+  status: string;
+}
+
 const MONTHS = [
   { id: 'jan', label: 'jan' }, { id: 'fev', label: 'fev' }, { id: 'mar', label: 'mar' },
   { id: 'abr', label: 'abr' }, { id: 'mai', label: 'mai' }, { id: 'jun', label: 'jun' },
@@ -55,35 +80,62 @@ const MONTHS = [
 ];
 
 export default function DashboardPage() {
-  const { payments, suppliers, user, selectedYear, initialYear, setYear, deletePayment, archiveYear } = useStore();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
-  
-  // Archiving states
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showRealModal, setShowRealModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
 
+  const { data: suppliers = [] } = useQuery<Supplier[]>({
+    queryKey: ["/api/suppliers"],
+  });
+
+  const { data: payments = [] } = useQuery<Payment[]>({
+    queryKey: ["/api/payments"],
+  });
+
+  const deletePaymentMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/payments/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
+      toast({ title: "Pagamento excluído", description: "O registro e os arquivos foram removidos com sucesso." });
+      setPaymentToDelete(null);
+      setSelectedPayment(null);
+    },
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: async (year: number) => {
+      await apiRequest("POST", `/api/payments/archive/${year}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
+      toast({ title: `Ano ${selectedYear} arquivado!`, description: "Storage liberado." });
+      setShowConfirmModal(false);
+    },
+  });
+
+  const initialYear = user?.initialYear || 2025;
   const currentYearSuffix = selectedYear.toString().slice(-2);
-  const isRealButtonEnabled = false; // For MVP simulation, real year end is false
+  const isRealButtonEnabled = false;
 
   const handlePrevYear = () => {
-    if (selectedYear > initialYear) {
-      setYear(selectedYear - 1);
-    }
+    if (selectedYear > initialYear) setSelectedYear(selectedYear - 1);
   };
 
-  const handleNextYear = () => {
-    setYear(selectedYear + 1);
-  };
+  const handleNextYear = () => setSelectedYear(selectedYear + 1);
 
   const handleCellClick = (supplier: Supplier, monthId: string) => {
     const monthYear = `${monthId}${currentYearSuffix}`;
     const payment = payments.find(p => p.supplierId === supplier.id && p.monthYear === monthYear);
-    
     if (payment) {
       setSelectedPayment(payment);
     } else {
@@ -148,21 +200,7 @@ export default function DashboardPage() {
 
   const getMonthTotal = (monthId: string) => {
     const monthYear = `${monthId}${currentYearSuffix}`;
-    return payments
-      .filter(p => p.monthYear === monthYear)
-      .reduce((acc, curr) => acc + curr.amount, 0);
-  };
-
-  const handleDeletePayment = () => {
-    if (paymentToDelete) {
-      deletePayment(paymentToDelete);
-      toast({
-        title: "Pagamento excluído",
-        description: "O registro e os arquivos foram removidos com sucesso.",
-      });
-      setPaymentToDelete(null);
-      setSelectedPayment(null);
-    }
+    return payments.filter(p => p.monthYear === monthYear).reduce((acc, curr) => acc + curr.amount, 0);
   };
 
   const handleRealArchive = () => {
@@ -175,12 +213,7 @@ export default function DashboardPage() {
   };
 
   const handleConfirmArchive = () => {
-    archiveYear(selectedYear);
-    toast({
-      title: `Ano ${selectedYear} arquivado!`,
-      description: "Storage liberado.",
-    });
-    setShowConfirmModal(false);
+    archiveMutation.mutate(selectedYear);
   };
 
   return (
@@ -200,6 +233,7 @@ export default function DashboardPage() {
                     className="gap-2" 
                     disabled={!isRealButtonEnabled}
                     onClick={() => setShowRealModal(true)}
+                    data-testid="button-archive"
                   >
                     <Archive className="w-4 h-4" />
                     Arquivar Ano [{selectedYear}]
@@ -224,11 +258,12 @@ export default function DashboardPage() {
               size="icon" 
               onClick={handlePrevYear}
               disabled={selectedYear <= initialYear}
+              data-testid="button-prev-year"
             >
               <ChevronLeft className="w-5 h-5" />
             </Button>
-            <span className="text-xl font-bold font-heading">{selectedYear}</span>
-            <Button variant="ghost" size="icon" onClick={handleNextYear}>
+            <span className="text-xl font-bold font-heading" data-testid="text-year">{selectedYear}</span>
+            <Button variant="ghost" size="icon" onClick={handleNextYear} data-testid="button-next-year">
               <ChevronRight className="w-5 h-5" />
             </Button>
           </div>
@@ -252,6 +287,7 @@ export default function DashboardPage() {
                     <TableCell 
                       className="font-medium cursor-pointer hover:underline decoration-primary hover:text-primary transition-colors sticky left-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10"
                       onClick={() => setEditingSupplier(supplier)}
+                      data-testid={`cell-supplier-${supplier.id}`}
                     >
                       <TooltipProvider>
                         <Tooltip>
@@ -270,13 +306,13 @@ export default function DashboardPage() {
                         key={m.id} 
                         className="p-0 h-14 border-l first:border-l-0"
                         onClick={() => handleCellClick(supplier, m.id)}
+                        data-testid={`cell-payment-${supplier.id}-${m.id}`}
                       >
                         {getCellContent(supplier, m.id)}
                       </TableCell>
                     ))}
                   </TableRow>
                 ))}
-                {/* TOTALS ROW */}
                 <TableRow className="hover:bg-transparent bg-[#cfe2ff] text-[#084298] font-bold border-t border-[#084298]/20">
                   <TableCell className="font-bold sticky left-0 bg-[#cfe2ff] z-10">TOTAL</TableCell>
                   <TableCell className="bg-[#cfe2ff]" />
@@ -288,7 +324,6 @@ export default function DashboardPage() {
                     </TableCell>
                   ))}
                 </TableRow>
-                {/* ANNUAL TOTAL ROW */}
                 <TableRow className="hover:bg-transparent bg-[#0d47a1] text-white font-bold">
                   <TableCell className="font-bold sticky left-0 bg-[#0d47a1] z-10">TOTAL ANO {selectedYear}</TableCell>
                   <TableCell />
@@ -308,7 +343,6 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Details Modal */}
       <Dialog open={!!selectedPayment} onOpenChange={(open) => !open && setSelectedPayment(null)}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -319,13 +353,13 @@ export default function DashboardPage() {
               {selectedPayment.isArchived && (
                 <div className="bg-muted/50 p-3 rounded-lg flex items-center gap-2 text-muted-foreground text-sm border">
                   <Archive className="w-4 h-4" />
-                  📦 Arquivos arquivados. Consulte historico_{selectedYear}.zip
+                  Arquivos arquivados. Consulte historico_{selectedYear}.zip
                 </div>
               )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Valor:</p>
-                  <p className="font-bold text-lg">{formatCurrency(selectedPayment.amount)}</p>
+                  <p className="font-bold text-lg" data-testid="text-payment-amount">{formatCurrency(selectedPayment.amount)}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Data:</p>
@@ -347,8 +381,9 @@ export default function DashboardPage() {
                 <Button 
                   variant="outline" 
                   className="gap-2" 
-                  disabled={selectedPayment.isArchived}
-                  onClick={() => window.open(selectedPayment.fileUrl || '#', '_blank')}
+                  disabled={selectedPayment.isArchived || !selectedPayment.fileUrl}
+                  onClick={() => selectedPayment.fileUrl && window.open(selectedPayment.fileUrl, '_blank')}
+                  data-testid="button-view-fatura"
                 >
                   <FileText className="w-4 h-4 text-primary" />
                   Ver Fatura
@@ -356,8 +391,9 @@ export default function DashboardPage() {
                 <Button 
                   variant="outline" 
                   className="gap-2" 
-                  disabled={selectedPayment.isArchived}
-                  onClick={() => window.open(selectedPayment.receiptUrl || '#', '_blank')}
+                  disabled={selectedPayment.isArchived || !selectedPayment.receiptUrl}
+                  onClick={() => selectedPayment.receiptUrl && window.open(selectedPayment.receiptUrl, '_blank')}
+                  data-testid="button-view-receipt"
                 >
                   <Receipt className="w-4 h-4 text-emerald-500" />
                   Ver Comprovante
@@ -373,6 +409,7 @@ export default function DashboardPage() {
                       setLocation(`/pagamentos/novo?paymentId=${selectedPayment.id}`);
                       setSelectedPayment(null);
                     }}
+                    data-testid="button-edit-payment"
                   >
                     <Pencil className="w-4 h-4" />
                     Editar
@@ -381,6 +418,7 @@ export default function DashboardPage() {
                     variant="ghost" 
                     className="flex-1 gap-2 text-destructive hover:bg-destructive/10" 
                     onClick={() => setPaymentToDelete(selectedPayment.id)}
+                    data-testid="button-delete-payment"
                   >
                     <Trash2 className="w-4 h-4" />
                     Deletar Pagamento
@@ -395,7 +433,6 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Real Archive Modal */}
       <Dialog open={showRealModal} onOpenChange={setShowRealModal}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -412,7 +449,7 @@ export default function DashboardPage() {
             </div>
             <div className="bg-rose-50 border border-rose-200 p-4 rounded-lg">
               <p className="text-sm text-rose-800">
-                <span className="font-bold">⚠️ Atenção:</span> Após download e confirmação, os arquivos serão <span className="font-bold">REMOVIDOS</span> do sistema (Dados dos pagamentos continuam visíveis, mas sem arquivos anexados).
+                <span className="font-bold">Atenção:</span> Após download e confirmação, os arquivos serão <span className="font-bold">REMOVIDOS</span> do sistema (Dados dos pagamentos continuam visíveis, mas sem arquivos anexados).
               </p>
             </div>
           </div>
@@ -430,16 +467,15 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Confirm Download Modal */}
       <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle className="font-heading">Arquivo gerado com sucesso!</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <p className="text-sm font-medium">📥 Download iniciado (verificar pasta Downloads)</p>
+            <p className="text-sm font-medium">Download iniciado (verificar pasta Downloads)</p>
             <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg space-y-2 text-blue-800">
-              <p className="text-xs font-bold uppercase tracking-wider">⚠️ IMPORTANTE:</p>
+              <p className="text-xs font-bold uppercase tracking-wider">IMPORTANTE:</p>
               <p className="text-sm">Salve este arquivo em local seguro (nuvem pessoal, HD externo, etc)</p>
               <p className="text-xs">O arquivo <span className="font-mono font-bold">historico_{selectedYear}.zip</span> contém TUDO do ano {selectedYear}.</p>
             </div>
@@ -465,7 +501,7 @@ export default function DashboardPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={handleDeletePayment}
+              onClick={() => paymentToDelete && deletePaymentMutation.mutate(paymentToDelete)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Confirmar

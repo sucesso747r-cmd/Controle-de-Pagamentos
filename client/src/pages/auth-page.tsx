@@ -1,23 +1,40 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useStore } from "@/lib/store";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AuthPage() {
   const [, setLocation] = useLocation();
-  const login = useStore((state) => state.login);
+  const { login, register } = useAuth();
+  const { toast } = useToast();
+  const [isRegister, setIsRegister] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleLogin = () => {
-    // Mock login
-    login({
-      id: "user_123",
-      name: "João Silva",
-      email: "joao@exemplo.com",
-      avatarUrl: "https://github.com/shadcn.png"
-    });
-    setLocation("/");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (isRegister) {
+        await register.mutateAsync({ name, email, password });
+      } else {
+        await login.mutateAsync({ email, password });
+      }
+      setLocation("/");
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: err.message || "Erro ao autenticar",
+      });
+    }
   };
+
+  const isPending = login.isPending || register.isPending;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
@@ -27,23 +44,87 @@ export default function AuthPage() {
             <CheckCircle2 className="w-6 h-6" />
           </div>
           <div className="space-y-2">
-            <CardTitle className="text-2xl font-bold tracking-tight">Bem-vindo</CardTitle>
+            <CardTitle className="text-2xl font-bold tracking-tight">
+              {isRegister ? "Criar Conta" : "Bem-vindo"}
+            </CardTitle>
             <CardDescription className="text-base">
-              Gerencie seus pagamentos de fornecedores com facilidade.
+              {isRegister
+                ? "Crie sua conta para começar a gerenciar pagamentos."
+                : "Gerencie seus pagamentos de fornecedores com facilidade."}
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
-          <Button 
-            size="lg" 
-            className="w-full font-medium text-base h-12 gap-2" 
-            onClick={handleLogin}
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .533 5.347.533 12S5.867 24 12.48 24c3.44 0 6.013-1.133 8.053-3.24 2.08-2.16 2.627-5.467 2.627-8.24 0-.787-.067-1.52-.187-2.267H12.48z" />
-            </svg>
-            Entrar com Google
-          </Button>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {isRegister && (
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome</Label>
+                <Input
+                  id="name"
+                  data-testid="input-name"
+                  placeholder="Seu nome completo"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="h-12"
+                />
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                data-testid="input-email"
+                type="email"
+                placeholder="seu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="h-12"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <Input
+                id="password"
+                data-testid="input-password"
+                type="password"
+                placeholder="Mínimo 6 caracteres"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                className="h-12"
+              />
+            </div>
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full font-medium text-base h-12 gap-2"
+              disabled={isPending}
+              data-testid="button-submit"
+            >
+              {isPending ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : isRegister ? (
+                "Criar Conta"
+              ) : (
+                "Entrar"
+              )}
+            </Button>
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                className="text-sm text-primary hover:underline"
+                onClick={() => setIsRegister(!isRegister)}
+                data-testid="link-toggle-auth"
+              >
+                {isRegister
+                  ? "Já tem conta? Entrar"
+                  : "Não tem conta? Criar uma"}
+              </button>
+            </div>
+          </form>
         </CardContent>
       </Card>
     </div>

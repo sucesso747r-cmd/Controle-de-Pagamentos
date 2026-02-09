@@ -1,18 +1,71 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, real, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
   password: text("password").notNull(),
+  avatarUrl: text("avatar_url"),
+  subscriptionPlan: text("subscription_plan").notNull().default("Starter"),
+  initialYear: integer("initial_year").notNull().default(2025),
+  destEmail: text("dest_email"),
+  sendCopy: boolean("send_copy").notNull().default(false),
+  copyType: text("copy_type").default("cc"),
+  copyEmail: text("copy_email"),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const suppliers = pgTable("suppliers", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  serviceName: text("service_name").notNull(),
+  isRecurring: boolean("is_recurring").notNull().default(false),
+  dueDay: integer("due_day"),
+  ownerId: varchar("owner_id", { length: 36 }).notNull().references(() => users.id),
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
+export const payments = pgTable("payments", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  supplierId: varchar("supplier_id", { length: 36 }).notNull().references(() => suppliers.id),
+  ownerId: varchar("owner_id", { length: 36 }).notNull().references(() => users.id),
+  amount: real("amount").notNull(),
+  monthYear: text("month_year").notNull(),
+  pixKey: text("pix_key"),
+  dueDay: integer("due_day"),
+  fileUrl: text("file_url"),
+  receiptUrl: text("receipt_url"),
+  status: text("status").notNull().default("paid"),
+  isArchived: boolean("is_archived").notNull().default(false),
+  registrationDate: timestamp("registration_date").notNull().defaultNow(),
+});
+
+export const insertUserSchema = createInsertSchema(users).omit({ id: true });
+export const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+});
+export const registerSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  password: z.string().min(6),
+});
+
+export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, ownerId: true });
+export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true, ownerId: true, registrationDate: true, isArchived: true });
+
+export const updateSettingsSchema = z.object({
+  initialYear: z.number().optional(),
+  destEmail: z.string().optional(),
+  sendCopy: z.boolean().optional(),
+  copyType: z.string().optional(),
+  copyEmail: z.string().optional(),
+});
+
 export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type Supplier = typeof suppliers.$inferSelect;
+export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
+export type Payment = typeof payments.$inferSelect;
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;

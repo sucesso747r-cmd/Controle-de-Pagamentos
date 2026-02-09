@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { useStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
 import { 
   LayoutDashboard, 
   PlusCircle, 
@@ -17,7 +17,7 @@ import { useState } from "react";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { user, logout } = useStore();
+  const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
 
   const navItems = [
@@ -31,6 +31,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: "/ajuda", label: "Central de Ajuda", icon: HelpCircle },
   ];
 
+  const handleLogout = () => {
+    logout.mutate();
+  };
+
   const NavContent = () => (
     <div className="flex flex-col h-full">
       <div className="p-6 border-b">
@@ -41,7 +45,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           Gestão
         </h1>
         <p className="text-sm text-muted-foreground mt-2">
-          Olá, {user?.name.split(" ")[0]}
+          Olá, {user?.name?.split(" ")[0]}
         </p>
       </div>
 
@@ -71,7 +75,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <Button 
           variant="ghost" 
           className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
-          onClick={() => logout()}
+          onClick={handleLogout}
         >
           <LogOut className="w-5 h-5" />
           Sair
@@ -82,12 +86,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Desktop Sidebar */}
       <aside className="hidden md:block w-64 border-r bg-card/50 backdrop-blur-xl fixed h-full z-10">
         <NavContent />
       </aside>
 
-      {/* Mobile Header & Content */}
       <div className="flex-1 flex flex-col md:ml-64 min-h-screen">
         <header className="md:hidden h-16 border-b flex items-center justify-between px-4 bg-card/80 backdrop-blur-md sticky top-0 z-20">
           <div className="font-bold font-heading">Gestão de Pagamentos</div>

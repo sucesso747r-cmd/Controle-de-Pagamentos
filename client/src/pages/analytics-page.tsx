@@ -1,48 +1,39 @@
-import { useStore, Payment } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
 } from "@/components/ui/select";
+import { Wallet, ArrowUp, ArrowDown } from "lucide-react";
 import { 
-  Wallet, 
-  Calendar, 
-  ArrowUp, 
-  ArrowDown 
-} from "lucide-react";
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  PieChart, 
-  Pie, 
-  Cell,
-  Legend
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  PieChart, Pie, Cell, Legend
 } from 'recharts';
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 
+interface Supplier { id: string; name: string; serviceName: string; }
+interface Payment { id: string; supplierId: string; amount: number; monthYear: string; }
+
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 export default function AnalyticsDashboard() {
-  const { payments, suppliers, selectedYear, initialYear, user } = useStore();
-  const [year, setYearLocal] = useState(selectedYear.toString());
+  const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+
+  const { data: suppliers = [] } = useQuery<Supplier[]>({ queryKey: ["/api/suppliers"] });
+  const { data: payments = [] } = useQuery<Payment[]>({ queryKey: ["/api/payments"] });
+
+  const initialYear = user?.initialYear || 2025;
+  const [year, setYearLocal] = useState(new Date().getFullYear().toString());
 
   useEffect(() => {
     if (user && user.subscriptionPlan === "Starter") {
       toast({
         title: "Acesso Restrito",
-        description: "⚠️ Dashboard Analítico disponível apenas no Plano Pro. Faça upgrade para acessar relatórios avançados.",
+        description: "Dashboard Analítico disponível apenas no Plano Pro. Faça upgrade para acessar relatórios avançados.",
         variant: "destructive"
       });
       setLocation("/");
@@ -52,10 +43,9 @@ export default function AnalyticsDashboard() {
   if (!user || user.subscriptionPlan === "Starter") return null;
 
   const currentYearPayments = payments.filter(p => p.monthYear.endsWith(year.slice(-2)));
-  
   const totalGasto = currentYearPayments.reduce((acc, p) => acc + p.amount, 0);
   const mediaMensal = totalGasto / 12;
-  
+
   const monthlyTotals = Array.from({ length: 12 }, (_, i) => {
     const month = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'][i];
     const monthYear = `${month}${year.slice(-2)}`;
@@ -81,10 +71,7 @@ export default function AnalyticsDashboard() {
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
   const currentYear = new Date().getFullYear();
-  const years = Array.from(
-    { length: currentYear - initialYear + 1 }, 
-    (_, i) => initialYear + i
-  ).reverse();
+  const years = Array.from({ length: currentYear - initialYear + 1 }, (_, i) => initialYear + i).reverse();
 
   return (
     <div className="space-y-8 pb-10">
@@ -96,14 +83,8 @@ export default function AnalyticsDashboard() {
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">Ano:</span>
           <Select value={year} onValueChange={setYearLocal}>
-            <SelectTrigger className="w-[100px]">
-              <SelectValue placeholder="Ano" />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map(y => (
-                <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
-              ))}
-            </SelectContent>
+            <SelectTrigger className="w-[100px]" data-testid="select-analytics-year"><SelectValue placeholder="Ano" /></SelectTrigger>
+            <SelectContent>{years.map(y => (<SelectItem key={y} value={y.toString()}>{y}</SelectItem>))}</SelectContent>
           </Select>
         </div>
       </div>
@@ -114,9 +95,7 @@ export default function AnalyticsDashboard() {
             <CardTitle className="text-sm font-medium">Total Gasto {year}</CardTitle>
             <Wallet className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalGasto)}</div>
-          </CardContent>
+          <CardContent><div className="text-2xl font-bold" data-testid="text-total-spent">{formatCurrency(totalGasto)}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -146,16 +125,8 @@ export default function AnalyticsDashboard() {
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie
-                  data={servicesData}
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {servicesData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
+                <Pie data={servicesData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                  {servicesData.map((_, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}
                 </Pie>
                 <Tooltip formatter={(value: number) => formatCurrency(value)} />
                 <Legend />

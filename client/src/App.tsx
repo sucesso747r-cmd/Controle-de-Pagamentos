@@ -12,11 +12,20 @@ import AnalyticsPage from "@/pages/analytics-page";
 import SettingsPage from "@/pages/settings-page";
 import HelpPage from "@/pages/help-page";
 import Layout from "@/components/layout";
-import { useStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
+import { Loader2 } from "lucide-react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
-  const user = useStore((state) => state.user);
-  
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   if (!user) {
     return <Redirect to="/auth" />;
   }
@@ -29,14 +38,22 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 }
 
 function Router() {
-  const user = useStore((state) => state.user);
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <Switch>
       <Route path="/auth">
         {user ? <Redirect to="/" /> : <AuthPage />}
       </Route>
-      
+
       <Route path="/">
         <ProtectedRoute component={DashboardPage} />
       </Route>
@@ -44,11 +61,11 @@ function Router() {
       <Route path="/analytics">
         <ProtectedRoute component={AnalyticsPage} />
       </Route>
-      
+
       <Route path="/fornecedores">
         <ProtectedRoute component={SuppliersPage} />
       </Route>
-      
+
       <Route path="/pagamentos/novo">
         <ProtectedRoute component={PaymentPage} />
       </Route>
