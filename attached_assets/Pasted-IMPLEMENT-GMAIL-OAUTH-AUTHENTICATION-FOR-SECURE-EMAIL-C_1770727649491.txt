@@ -1,0 +1,67 @@
+IMPLEMENT GMAIL OAUTH AUTHENTICATION FOR SECURE EMAIL CONFIGURATION
+
+Replace manual Gmail app password input with OAuth 2.0 Google authentication flow. Users authorize app to send emails on their behalf without exposing passwords.
+
+**Changes Required:**
+
+1. **Google Cloud Console Setup (User does manually once):**
+   - Create OAuth 2.0 credentials (Google Cloud Console)
+   - Add Replit deployment URL to authorized redirect URIs
+   - Get: `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`
+   - Store in Replit Secrets
+
+2. **Remove Manual Password Input:**
+   - Delete "Gmail App Password" field from Settings page
+   - Delete `gmail_app_password` column from `users` table
+   - No plaintext password storage
+
+3. **Add OAuth "Connect Gmail" Button in Settings:**
+   - Section: Email Configuration
+   - Button: "Conectar Gmail" or "Autorizar Gmail"
+   - Behavior: Click → Redirect to Google OAuth consent screen → User approves → Redirect back with authorization code
+   - Status display: "Gmail connected as: usuario@gmail.com" (green checkmark)
+   - Disconnect button: "Desconectar Gmail" (revoke refresh token)
+
+4. **Backend OAuth Flow:**
+   - GET `/auth/gmail/callback` - Handle Google redirect with authorization code
+   - Exchange code for refresh_token + access_token
+   - Store refresh_token encrypted in `users` table (new column: `gmail_refresh_token`)
+   - access_token: Use for email sending, refresh when expired
+   - Never store or log tokens in plain text
+
+5. **Database Schema Update:**
+   - Remove column: `gmail_app_password` (plaintext)
+   - Add column: `gmail_refresh_token` (encrypted, nullable)
+   - Add column: `gmail_user_email` (email address authorized, for display)
+   - Add column: `gmail_connected_at` (timestamp, when authorized)
+
+6. **Email Sending Logic (Unchanged UX):**
+   - When user clicks "Enviar comprovante por email"
+   - Backend retrieves `gmail_refresh_token`
+   - Uses google-auth-library to refresh access token
+   - Sends email via Gmail API (not SMTP)
+   - Error handling: If token invalid → Show toast "Gmail authorization expired. Please reconnect in Settings."
+
+7. **Dependencies:**
+   - `npm install googleapis google-auth-library`
+
+8. **Error Handling:**
+   - HTTP 400: User denies OAuth consent → Show toast "Gmail authorization denied. Email sending requires authorization."
+   - HTTP 401: Refresh token expired → Show toast "Gmail authorization expired. Please reconnect in Settings."
+   - HTTP 500: Gmail API error → Show toast "Erro ao enviar email. Tente novamente."
+   - HTTP 200: Success → Toast "Comprovante enviado com sucesso"
+
+9. **Security:**
+   - OAuth credentials in Replit Secrets (never in code)
+   - Refresh tokens encrypted at rest
+   - Access tokens short-lived (1 hour)
+   - No passwords stored anywhere
+   - User can revoke access anytime (Desconectar button)
+
+10. **Validation:**
+   - After OAuth redirect, display "Gmail connected as: user@gmail.com"
+   - Test email sending works with authorized account
+   - Verify no plaintext passwords exist in database
+   - Test disconnect: tokens revoked, user must reconnect to send emails
+
+App UI text in Portuguese (PT-BR). We can talk in English.
