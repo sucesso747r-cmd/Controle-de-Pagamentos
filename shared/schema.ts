@@ -38,6 +38,7 @@ export const payments = pgTable("payments", {
   status: text("status").notNull().default("paid"),
   isArchived: boolean("is_archived").notNull().default(false),
   registrationDate: timestamp("registration_date").notNull().defaultNow(),
+  idempotencyKey: varchar("idempotency_key", { length: 64 }).unique(),
 });
 
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, ownerId: true });
