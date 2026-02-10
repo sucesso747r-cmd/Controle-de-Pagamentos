@@ -8,8 +8,19 @@ import path from "path";
 import fs from "fs";
 import { randomUUID } from "crypto";
 import { Resend } from "resend";
-import nodemailer from "nodemailer";
 import XLSX from "xlsx";
+import { google } from "googleapis";
+import { OAuth2Client } from "google-auth-library";
+
+function getGmailOAuthClient(): OAuth2Client {
+  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    throw new Error("GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET must be configured");
+  }
+  const redirectUri = `${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : "http://localhost:5000"}/api/gmail/callback`;
+  return new OAuth2Client(clientId, clientSecret, redirectUri);
+}
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -57,7 +68,7 @@ export async function registerRoutes(
   }
 
   app.get("/api/files/:id", isAuthenticated, async (req, res) => {
-    const fileId = req.params.id;
+    const fileId = req.params.id as string;
     const dbFile = await storage.getFile(fileId);
     if (!dbFile) {
       return res.status(404).json({ message: "Arquivo não encontrado" });
@@ -77,11 +88,103 @@ export async function registerRoutes(
     try {
       const userId = getUserId(req);
       const data = updateSettingsSchema.parse(req.body);
-      const user = await storage.updateUserSettings(userId, data);
-      const { resendApiKey: _r, gmailAppPassword: _g, ...safeUser } = user as any;
-      res.json({ ...safeUser, hasResendApiKey: !!_r, hasGmailAppPassword: !!_g });
+      const { gmailRefreshToken: _dropped1, gmailEmail: _dropped2, gmailConnectedAt: _dropped3, ...safeData } = data as any;
+
+      if (safeData.emailProvider === "gmail") {
+        const currentUser = await storage.getUser(userId);
+        if (!currentUser?.gmailRefreshToken) {
+          return res.status(400).json({ message: "Conecte sua conta Gmail antes de selecionar como provedor." });
+        }
+      }
+
+      const user = await storage.updateUserSettings(userId, safeData);
+      const { resendApiKey: _r, gmailRefreshToken: _t, ...safeUser } = user as any;
+      res.json({
+        ...safeUser,
+        hasResendApiKey: !!_r,
+        gmailConnected: !!_t,
+      });
     } catch (err: any) {
       res.status(400).json({ message: err.message });
+    }
+  });
+
+  // GMAIL OAUTH
+  app.get("/api/gmail/auth", isAuthenticated, async (_req, res) => {
+    try {
+      const oauth2Client = getGmailOAuthClient();
+      const authUrl = oauth2Client.generateAuthUrl({
+        access_type: "offline",
+        prompt: "consent",
+        scope: ["https://www.googleapis.com/auth/gmail.send", "https://www.googleapis.com/auth/userinfo.email"],
+      });
+      res.json({ url: authUrl });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/gmail/callback", isAuthenticated, async (req, res) => {
+    try {
+      const code = req.query.code as string;
+      const error = req.query.error as string;
+
+      if (error) {
+        return res.redirect("/?gmail_error=denied");
+      }
+      if (!code) {
+        return res.redirect("/?gmail_error=no_code");
+      }
+
+      const userId = getUserId(req);
+
+      const oauth2Client = getGmailOAuthClient();
+      const { tokens } = await oauth2Client.getToken(code);
+
+      if (!tokens.refresh_token) {
+        return res.redirect("/?gmail_error=no_refresh_token");
+      }
+
+      oauth2Client.setCredentials(tokens);
+      const oauth2 = google.oauth2({ version: "v2", auth: oauth2Client });
+      const { data: userInfo } = await oauth2.userinfo.get();
+
+      await storage.updateUserSettings(userId, {
+        gmailRefreshToken: tokens.refresh_token,
+        gmailEmail: userInfo.email || undefined,
+        gmailConnectedAt: new Date(),
+        emailProvider: "gmail",
+      } as any);
+
+      res.redirect("/?gmail_connected=true");
+    } catch (err: any) {
+      console.error("Gmail OAuth callback error:", err);
+      res.redirect("/?gmail_error=token_exchange_failed");
+    }
+  });
+
+  app.post("/api/gmail/disconnect", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const user = await storage.getUser(userId);
+
+      if (user?.gmailRefreshToken) {
+        try {
+          const oauth2Client = getGmailOAuthClient();
+          await oauth2Client.revokeToken(user.gmailRefreshToken);
+        } catch {}
+      }
+
+      await storage.updateUserSettings(userId, {
+        gmailRefreshToken: null,
+        gmailEmail: null,
+        gmailConnectedAt: null,
+        emailProvider: "none",
+      } as any);
+
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
     }
   });
 
@@ -325,30 +428,71 @@ export async function registerRoutes(
       }
 
       if (provider === "gmail") {
-        if (!user.gmailEmail || !user.gmailAppPassword) {
-          return res.status(400).json({ message: "Configure o email e senha de app do Gmail nas Configurações." });
+        if (!user.gmailRefreshToken) {
+          return res.status(401).json({ message: "Gmail não conectado. Conecte sua conta Gmail nas Configurações." });
         }
 
-        const transporter = nodemailer.createTransport({
-          service: "gmail",
-          auth: {
-            user: user.gmailEmail,
-            pass: user.gmailAppPassword,
-          },
-        });
+        try {
+          const oauth2Client = getGmailOAuthClient();
+          oauth2Client.setCredentials({ refresh_token: user.gmailRefreshToken });
 
-        await transporter.sendMail({
-          from: `${user.firstName || "Pagamentos"} <${user.gmailEmail}>`,
-          to: recipients.join(", "),
-          cc: cc.length > 0 ? cc.join(", ") : undefined,
-          bcc: bcc.length > 0 ? bcc.join(", ") : undefined,
-          subject,
-          text: body,
-          attachments: attachments.map((a) => ({
-            filename: a.filename,
-            content: a.content,
-          })),
-        });
+          const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+
+          const boundary = `boundary_${randomUUID()}`;
+          const fromHeader = `${user.firstName || "Pagamentos"} <${user.gmailEmail}>`;
+          const toHeader = recipients.join(", ");
+
+          let rawEmail = [
+            `From: ${fromHeader}`,
+            `To: ${toHeader}`,
+            ...(cc.length > 0 ? [`Cc: ${cc.join(", ")}`] : []),
+            ...(bcc.length > 0 ? [`Bcc: ${bcc.join(", ")}`] : []),
+            `Subject: =?UTF-8?B?${Buffer.from(subject).toString("base64")}?=`,
+            `MIME-Version: 1.0`,
+            `Content-Type: multipart/mixed; boundary="${boundary}"`,
+            ``,
+            `--${boundary}`,
+            `Content-Type: text/plain; charset="UTF-8"`,
+            `Content-Transfer-Encoding: base64`,
+            ``,
+            Buffer.from(body).toString("base64"),
+          ].join("\r\n");
+
+          for (const att of attachments) {
+            rawEmail += [
+              ``,
+              `--${boundary}`,
+              `Content-Type: application/octet-stream; name="${att.filename}"`,
+              `Content-Disposition: attachment; filename="${att.filename}"`,
+              `Content-Transfer-Encoding: base64`,
+              ``,
+              att.content.toString("base64"),
+            ].join("\r\n");
+          }
+
+          rawEmail += `\r\n--${boundary}--`;
+
+          const encodedMessage = Buffer.from(rawEmail)
+            .toString("base64")
+            .replace(/\+/g, "-")
+            .replace(/\//g, "_")
+            .replace(/=+$/, "");
+
+          await gmail.users.messages.send({
+            userId: "me",
+            requestBody: { raw: encodedMessage },
+          });
+        } catch (gmailErr: any) {
+          console.error("Gmail API error:", gmailErr);
+          if (gmailErr?.code === 401 || gmailErr?.message?.includes("invalid_grant")) {
+            await storage.updateUserSettings(userId, {
+              gmailRefreshToken: null,
+              gmailConnectedAt: null,
+            } as any);
+            return res.status(401).json({ message: "Autorização do Gmail expirada. Reconecte sua conta nas Configurações." });
+          }
+          return res.status(500).json({ message: "Erro ao enviar email via Gmail. Tente novamente." });
+        }
       } else if (provider === "resend") {
         const apiKey = user.resendApiKey || process.env.RESEND_API_KEY;
         if (!apiKey) {

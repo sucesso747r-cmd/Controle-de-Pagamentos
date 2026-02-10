@@ -4,6 +4,10 @@
 Full-stack web application for supplier payment tracking with OAuth authentication (Replit Auth / Google). All UI in Portuguese (PT-BR) with minimalist, mobile-optimized design.
 
 ## Recent Changes
+- 2026-02-10: Replaced Gmail app password with Gmail OAuth 2.0 (googleapis, google-auth-library)
+- 2026-02-10: Added Gmail OAuth routes: /api/gmail/auth, /api/gmail/callback, /api/gmail/disconnect
+- 2026-02-10: Email sending now uses Gmail API (not SMTP) with refresh tokens
+- 2026-02-10: Settings page: "Conectar Gmail" / "Desconectar Gmail" buttons replace password input
 - 2026-02-10: Migrated file storage from local disk to PostgreSQL (files table with base64 data)
 - 2026-02-10: Switched multer to memory storage, files saved to DB via saveFile/getFile/deleteFile methods
 - 2026-02-10: New /api/files/:id endpoint serves files from DB with ownership verification
@@ -34,7 +38,7 @@ Full-stack web application for supplier payment tracking with OAuth authenticati
 - `client/src/App.tsx` - Router with protected routes
 
 ### Database Tables
-- `users` - id, email, firstName, lastName, profileImageUrl, subscriptionPlan, initialYear, email settings, emailProvider (none/resend/gmail), gmailEmail, gmailAppPassword
+- `users` - id, email, firstName, lastName, profileImageUrl, subscriptionPlan, initialYear, email settings, emailProvider (none/resend/gmail), gmailEmail, gmailRefreshToken, gmailConnectedAt
 - `sessions` - sid, sess, expire (Replit Auth session store)
 - `suppliers` - id, name, serviceName, isRecurring, dueDay, ownerId
 - `payments` - id, supplierId, ownerId, amount, monthYear, pixKey, dueDay, fileUrl, receiptUrl, status, isArchived
@@ -50,11 +54,17 @@ Full-stack web application for supplier payment tracking with OAuth authenticati
 - POST /api/payments/archive/:year - Archive year's files
 - POST /api/payments/:id/send-receipt - Send payment receipt email via Resend API
 
+### API Endpoints (Gmail OAuth)
+- GET /api/gmail/auth - Get Gmail OAuth authorization URL
+- GET /api/gmail/callback - Handle Google redirect with authorization code
+- POST /api/gmail/disconnect - Revoke Gmail access and clear tokens
+
 ### Design Decisions
 - OAuth via Replit Auth (Google, GitHub, X, Apple, email)
-- Dual email provider: Gmail SMTP (nodemailer, free) or Resend API (RESEND_API_KEY secret)
+- Dual email provider: Gmail (OAuth 2.0, googleapis) or Resend API (RESEND_API_KEY secret)
 - Email provider selection stored per-user (emailProvider field: none/gmail/resend)
-- Gmail SMTP credentials (email + app password) stored per-user, app password stripped from API responses
+- Gmail OAuth: refresh tokens stored in DB, access tokens refreshed automatically via google-auth-library
+- Email sending via Gmail API (not SMTP), requires GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET secrets
 - File storage in PostgreSQL (base64 in files table) for production persistence across deploys
 - Multer uses memory storage, files saved to DB immediately after upload
 - GET /api/files/:id serves files from DB with ownership check (ownerId match)

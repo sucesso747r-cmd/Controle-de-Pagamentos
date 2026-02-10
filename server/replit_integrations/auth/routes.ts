@@ -10,8 +10,12 @@ export function registerAuthRoutes(app: Express): void {
       const userId = req.user.claims.sub;
       const user = await authStorage.getUser(userId);
       if (user) {
-        const { resendApiKey, gmailAppPassword, ...safeUser } = user as any;
-        res.json({ ...safeUser, hasResendApiKey: !!resendApiKey, hasGmailAppPassword: !!gmailAppPassword });
+        const { resendApiKey, gmailRefreshToken, ...safeUser } = user as any;
+        res.json({
+          ...safeUser,
+          hasResendApiKey: !!resendApiKey,
+          gmailConnected: !!gmailRefreshToken,
+        });
       } else {
         res.json(user);
       }

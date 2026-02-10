@@ -30,7 +30,8 @@ export const users = pgTable("users", {
   resendApiKey: text("resend_api_key"),
   emailProvider: text("email_provider").notNull().default("none"),
   gmailEmail: text("gmail_email"),
-  gmailAppPassword: text("gmail_app_password"),
+  gmailRefreshToken: text("gmail_refresh_token"),
+  gmailConnectedAt: timestamp("gmail_connected_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

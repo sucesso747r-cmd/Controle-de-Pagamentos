@@ -14,6 +14,8 @@ import HelpPage from "@/pages/help-page";
 import Layout from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, isLoading } = useAuth();
@@ -69,11 +71,39 @@ function Router() {
   );
 }
 
+function GmailOAuthHandler() {
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const gmailConnected = params.get("gmail_connected");
+    const gmailError = params.get("gmail_error");
+
+    if (gmailConnected === "true") {
+      toast({ title: "Gmail conectado com sucesso!" });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (gmailError) {
+      const messages: Record<string, string> = {
+        denied: "Autorização do Gmail negada. É necessário autorizar para enviar emails.",
+        no_code: "Erro na autorização do Gmail. Tente novamente.",
+        no_refresh_token: "Erro na autorização do Gmail. Tente novamente revogando o acesso anterior em myaccount.google.com.",
+        token_exchange_failed: "Erro ao trocar o código de autorização. Tente novamente.",
+      };
+      toast({ variant: "destructive", title: messages[gmailError] || "Erro na autorização do Gmail." });
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
+  return null;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
+        <GmailOAuthHandler />
         <Router />
       </TooltipProvider>
     </QueryClientProvider>
