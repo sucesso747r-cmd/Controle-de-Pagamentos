@@ -110,7 +110,7 @@ export default function SettingsPage() {
               <Label htmlFor="dest-email-config">Email de destino para comprovantes</Label>
               <Input id="dest-email-config" type="email" value={destEmail} onChange={(e) => setDestEmail(e.target.value)} placeholder="exemplo@empresa.com.br" data-testid="input-dest-email" />
             </div>
-            <div className="space-y-4">
+            {/* <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <Checkbox id="send-copy" checked={sendCopy} onCheckedChange={(val) => setSendCopy(val as boolean)} data-testid="checkbox-send-copy" />
                 <Label htmlFor="send-copy" className="cursor-pointer">Enviar cópia?</Label>
@@ -133,7 +133,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
               )}
-            </div>
+            </div> */}
             <Button onClick={handleSaveEmailConfig} className="w-full sm:w-auto" data-testid="button-save-email">Salvar Configurações de Email</Button>
           </CardContent>
         </Card>
