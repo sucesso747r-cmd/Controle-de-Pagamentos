@@ -97,6 +97,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPayment(data: InsertPayment & { ownerId: string }): Promise<Payment> {
+    if (data.idempotencyKey) {
+      const [payment] = await db.insert(payments).values(data)
+        .onConflictDoNothing({ target: payments.idempotencyKey })
+        .returning();
+      if (!payment) {
+        const existing = await this.getPaymentByIdempotencyKey(data.idempotencyKey, data.ownerId);
+        if (existing) return existing;
+      }
+      return payment;
+    }
     const [payment] = await db.insert(payments).values(data).returning();
     return payment;
   }
