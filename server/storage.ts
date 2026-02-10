@@ -193,3 +193,24 @@ export class DatabaseStorage implements IStorage {
 }
 
 export const storage = new DatabaseStorage();
+
+export async function migrateSensitiveFields(): Promise<void> {
+  const allUsers = await db.select().from(users);
+  let count = 0;
+  for (const u of allUsers) {
+    const updates: Record<string, string> = {};
+    if (u.resendApiKey && typeof u.resendApiKey === "string" && !isEncrypted(u.resendApiKey)) {
+      updates.resendApiKey = encrypt(u.resendApiKey);
+    }
+    if (u.gmailRefreshToken && typeof u.gmailRefreshToken === "string" && !isEncrypted(u.gmailRefreshToken)) {
+      updates.gmailRefreshToken = encrypt(u.gmailRefreshToken);
+    }
+    if (Object.keys(updates).length > 0) {
+      await db.update(users).set(updates).where(eq(users.id, u.id));
+      count++;
+    }
+  }
+  if (count > 0) {
+    console.log(`[migration] Encrypted sensitive fields for ${count} user(s)`);
+  }
+}
