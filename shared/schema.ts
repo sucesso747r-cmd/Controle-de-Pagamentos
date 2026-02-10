@@ -41,6 +41,15 @@ export const payments = pgTable("payments", {
   idempotencyKey: varchar("idempotency_key", { length: 64 }).unique(),
 });
 
+export const files = pgTable("files", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  filename: text("filename").notNull(),
+  mimeType: text("mime_type").notNull(),
+  data: text("data").notNull(),
+  ownerId: varchar("owner_id", { length: 36 }).notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, ownerId: true });
 export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true, ownerId: true, registrationDate: true, isArchived: true });
 

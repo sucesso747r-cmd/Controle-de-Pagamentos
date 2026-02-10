@@ -4,6 +4,10 @@
 Full-stack web application for supplier payment tracking with OAuth authentication (Replit Auth / Google). All UI in Portuguese (PT-BR) with minimalist, mobile-optimized design.
 
 ## Recent Changes
+- 2026-02-10: Migrated file storage from local disk to PostgreSQL (files table with base64 data)
+- 2026-02-10: Switched multer to memory storage, files saved to DB via saveFile/getFile/deleteFile methods
+- 2026-02-10: New /api/files/:id endpoint serves files from DB with ownership verification
+- 2026-02-10: Migrated all existing disk files to database, updated payment URLs
 - 2026-02-09: Implemented dual email provider system (Gmail SMTP + Resend API) with radio toggle in Settings
 - 2026-02-09: Added "Enviar comprovante por email" button to payment details modal (Resend API)
 - 2026-02-09: Switched from manual email/password auth to Replit Auth (OAuth with Google, GitHub, etc.)
@@ -15,7 +19,7 @@ Full-stack web application for supplier payment tracking with OAuth authenticati
 - **Frontend**: React + Vite + TanStack Query + shadcn/ui + wouter routing
 - **Backend**: Express.js with Replit Auth (OpenID Connect via passport)
 - **Database**: PostgreSQL with Drizzle ORM
-- **File Storage**: Local disk storage via multer (uploads/ directory)
+- **File Storage**: PostgreSQL database (files table with base64 data, multer memory storage)
 - **Auth**: Replit Auth (OIDC) with PostgreSQL session store
 
 ### Key Files
@@ -34,6 +38,7 @@ Full-stack web application for supplier payment tracking with OAuth authenticati
 - `sessions` - sid, sess, expire (Replit Auth session store)
 - `suppliers` - id, name, serviceName, isRecurring, dueDay, ownerId
 - `payments` - id, supplierId, ownerId, amount, monthYear, pixKey, dueDay, fileUrl, receiptUrl, status, isArchived
+- `files` - id, filename, mimeType, data (base64 text), ownerId, createdAt
 
 ### API Endpoints
 - GET /api/login - Begin OAuth login flow
@@ -50,10 +55,12 @@ Full-stack web application for supplier payment tracking with OAuth authenticati
 - Dual email provider: Gmail SMTP (nodemailer, free) or Resend API (RESEND_API_KEY secret)
 - Email provider selection stored per-user (emailProvider field: none/gmail/resend)
 - Gmail SMTP credentials (email + app password) stored per-user, app password stripped from API responses
-- Local file storage for portability
+- File storage in PostgreSQL (base64 in files table) for production persistence across deploys
+- Multer uses memory storage, files saved to DB immediately after upload
+- GET /api/files/:id serves files from DB with ownership check (ownerId match)
 - Pro plan gates analytics dashboard access
 - initialYear setting controls year navigation bounds
-- File uploads use multipart/form-data with multer
+- File uploads use multipart/form-data with multer (memory storage)
 - Ownership verification on file access prevents cross-tenant data exposure
 
 ## User Preferences

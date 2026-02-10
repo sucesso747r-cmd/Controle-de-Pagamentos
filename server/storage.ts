@@ -1,11 +1,13 @@
 import { eq, and, sql } from "drizzle-orm";
 import { db } from "./db";
 import {
-  users, suppliers, payments, services,
+  users, suppliers, payments, services, files,
   type User, type Supplier, type InsertSupplier,
   type Payment, type InsertPayment,
   type Service, type InsertService,
 } from "@shared/schema";
+
+export type DbFile = typeof files.$inferSelect;
 
 export interface IStorage {
   getUser(userId: string): Promise<User | undefined>;
@@ -27,6 +29,10 @@ export interface IStorage {
   updatePayment(id: string, ownerId: string, data: Partial<InsertPayment>): Promise<Payment>;
   deletePayment(id: string, ownerId: string): Promise<void>;
   archiveYear(ownerId: string, yearSuffix: string): Promise<void>;
+
+  saveFile(filename: string, mimeType: string, data: string, ownerId: string): Promise<DbFile>;
+  getFile(id: string): Promise<DbFile | undefined>;
+  deleteFile(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -127,10 +133,32 @@ export class DatabaseStorage implements IStorage {
     const allPayments = await this.getPayments(ownerId);
     const toArchive = allPayments.filter(p => p.monthYear.endsWith(yearSuffix));
     for (const p of toArchive) {
+      if (p.fileUrl && p.fileUrl.startsWith("/api/files/")) {
+        const fileId = p.fileUrl.replace("/api/files/", "");
+        try { await this.deleteFile(fileId); } catch {}
+      }
+      if (p.receiptUrl && p.receiptUrl.startsWith("/api/files/")) {
+        const fileId = p.receiptUrl.replace("/api/files/", "");
+        try { await this.deleteFile(fileId); } catch {}
+      }
       await db.update(payments)
         .set({ isArchived: true, fileUrl: null, receiptUrl: null })
         .where(eq(payments.id, p.id));
     }
+  }
+
+  async saveFile(filename: string, mimeType: string, data: string, ownerId: string): Promise<DbFile> {
+    const [file] = await db.insert(files).values({ filename, mimeType, data, ownerId }).returning();
+    return file;
+  }
+
+  async getFile(id: string): Promise<DbFile | undefined> {
+    const [file] = await db.select().from(files).where(eq(files.id, id));
+    return file;
+  }
+
+  async deleteFile(id: string): Promise<void> {
+    await db.delete(files).where(eq(files.id, id));
   }
 }
 

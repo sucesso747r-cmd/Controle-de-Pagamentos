@@ -11,21 +11,8 @@ import { Resend } from "resend";
 import nodemailer from "nodemailer";
 import XLSX from "xlsx";
 
-const uploadsDir = path.join(process.cwd(), "uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-const multerStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadsDir),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${randomUUID()}${ext}`);
-  },
-});
-
 const upload = multer({
-  storage: multerStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const blocked = [".exe", ".bat", ".sh", ".cmd", ".msi", ".com"];
@@ -37,6 +24,12 @@ const upload = multer({
     cb(null, true);
   },
 });
+
+async function saveUploadedFile(file: Express.Multer.File, ownerId: string): Promise<string> {
+  const base64Data = file.buffer.toString("base64");
+  const dbFile = await storage.saveFile(file.originalname, file.mimetype, base64Data, ownerId);
+  return `/api/files/${dbFile.id}`;
+}
 
 function getUserId(req: Request): string {
   return (req.user as any)?.claims?.sub;
@@ -63,22 +56,20 @@ export async function registerRoutes(
     }
   }
 
-  app.use("/uploads", isAuthenticated, async (req, res, next) => {
-    const filename = path.basename(req.path);
-    const filePath = path.join(uploadsDir, filename);
-    if (!fs.existsSync(filePath)) {
+  app.get("/api/files/:id", isAuthenticated, async (req, res) => {
+    const fileId = req.params.id;
+    const dbFile = await storage.getFile(fileId);
+    if (!dbFile) {
       return res.status(404).json({ message: "Arquivo não encontrado" });
     }
     const userId = getUserId(req);
-    const userPayments = await storage.getPayments(userId);
-    const ownsFile = userPayments.some(p =>
-      (p.fileUrl && p.fileUrl.includes(filename)) ||
-      (p.receiptUrl && p.receiptUrl.includes(filename))
-    );
-    if (!ownsFile) {
+    if (dbFile.ownerId !== userId) {
       return res.status(403).json({ message: "Acesso negado" });
     }
-    res.sendFile(filePath);
+    const buffer = Buffer.from(dbFile.data, "base64");
+    res.set("Content-Type", dbFile.mimeType);
+    res.set("Content-Disposition", `inline; filename="${dbFile.filename}"`);
+    res.send(buffer);
   });
 
   // SETTINGS
@@ -180,9 +171,12 @@ export async function registerRoutes(
         }
       }
 
-      const files = req.files as { [key: string]: Express.Multer.File[] };
-      const faturaFile = files?.fatura?.[0];
-      const comprovanteFile = files?.comprovante?.[0];
+      const uploadedFiles = req.files as { [key: string]: Express.Multer.File[] };
+      const faturaFile = uploadedFiles?.fatura?.[0];
+      const comprovanteFile = uploadedFiles?.comprovante?.[0];
+
+      const fileUrl = faturaFile ? await saveUploadedFile(faturaFile, userId) : null;
+      const receiptUrl = comprovanteFile ? await saveUploadedFile(comprovanteFile, userId) : null;
 
       const paymentData = {
         supplierId: req.body.supplierId,
@@ -191,8 +185,8 @@ export async function registerRoutes(
         pixKey: req.body.pixKey || null,
         dueDay: req.body.dueDay ? parseInt(req.body.dueDay) : null,
         status: req.body.status || "paid",
-        fileUrl: faturaFile ? `/uploads/${faturaFile.filename}` : null,
-        receiptUrl: comprovanteFile ? `/uploads/${comprovanteFile.filename}` : null,
+        fileUrl,
+        receiptUrl,
         ownerId: userId,
         idempotencyKey: idempotencyKey || null,
       };
@@ -211,9 +205,9 @@ export async function registerRoutes(
     try {
       const pid = req.params.id as string;
       const userId = getUserId(req);
-      const files = req.files as { [key: string]: Express.Multer.File[] };
-      const faturaFile = files?.fatura?.[0];
-      const comprovanteFile = files?.comprovante?.[0];
+      const uploadedFiles = req.files as { [key: string]: Express.Multer.File[] };
+      const faturaFile = uploadedFiles?.fatura?.[0];
+      const comprovanteFile = uploadedFiles?.comprovante?.[0];
 
       const updateData: any = {};
       if (req.body.amount) updateData.amount = parseFloat(req.body.amount);
@@ -221,8 +215,8 @@ export async function registerRoutes(
       if (req.body.pixKey !== undefined) updateData.pixKey = req.body.pixKey || null;
       if (req.body.dueDay !== undefined) updateData.dueDay = req.body.dueDay ? parseInt(req.body.dueDay) : null;
       if (req.body.status) updateData.status = req.body.status;
-      if (faturaFile) updateData.fileUrl = `/uploads/${faturaFile.filename}`;
-      if (comprovanteFile) updateData.receiptUrl = `/uploads/${comprovanteFile.filename}`;
+      if (faturaFile) updateData.fileUrl = await saveUploadedFile(faturaFile, userId);
+      if (comprovanteFile) updateData.receiptUrl = await saveUploadedFile(comprovanteFile, userId);
 
       const payment = await storage.updatePayment(pid, userId, updateData);
       if (!payment) return res.status(404).json({ message: "Pagamento não encontrado" });
@@ -237,13 +231,13 @@ export async function registerRoutes(
     const userId = getUserId(req);
     const payment = await storage.getPayment(did, userId);
     if (payment) {
-      if (payment.fileUrl) {
-        const fp = path.join(uploadsDir, path.basename(payment.fileUrl));
-        if (fs.existsSync(fp)) fs.unlinkSync(fp);
+      if (payment.fileUrl && payment.fileUrl.startsWith("/api/files/")) {
+        const fileId = payment.fileUrl.replace("/api/files/", "");
+        try { await storage.deleteFile(fileId); } catch {}
       }
-      if (payment.receiptUrl) {
-        const fp = path.join(uploadsDir, path.basename(payment.receiptUrl));
-        if (fs.existsSync(fp)) fs.unlinkSync(fp);
+      if (payment.receiptUrl && payment.receiptUrl.startsWith("/api/files/")) {
+        const fileId = payment.receiptUrl.replace("/api/files/", "");
+        try { await storage.deleteFile(fileId); } catch {}
       }
     }
     await storage.deletePayment(did, userId);
@@ -277,22 +271,26 @@ export async function registerRoutes(
 
       const attachments: { filename: string; content: Buffer }[] = [];
 
-      if (payment.fileUrl) {
-        const faturaPath = path.join(uploadsDir, path.basename(payment.fileUrl));
-        if (fs.existsSync(faturaPath)) {
+      if (payment.fileUrl && payment.fileUrl.startsWith("/api/files/")) {
+        const fileId = payment.fileUrl.replace("/api/files/", "");
+        const dbFile = await storage.getFile(fileId);
+        if (dbFile) {
+          const ext = path.extname(dbFile.filename) || ".pdf";
           attachments.push({
-            filename: `fatura_${supplier.name}_${payment.monthYear}${path.extname(faturaPath)}`,
-            content: fs.readFileSync(faturaPath),
+            filename: `fatura_${supplier.name}_${payment.monthYear}${ext}`,
+            content: Buffer.from(dbFile.data, "base64"),
           });
         }
       }
 
-      if (payment.receiptUrl) {
-        const receiptPath = path.join(uploadsDir, path.basename(payment.receiptUrl));
-        if (fs.existsSync(receiptPath)) {
+      if (payment.receiptUrl && payment.receiptUrl.startsWith("/api/files/")) {
+        const fileId = payment.receiptUrl.replace("/api/files/", "");
+        const dbFile = await storage.getFile(fileId);
+        if (dbFile) {
+          const ext = path.extname(dbFile.filename) || ".pdf";
           attachments.push({
-            filename: `comprovante_${supplier.name}_${payment.monthYear}${path.extname(receiptPath)}`,
-            content: fs.readFileSync(receiptPath),
+            filename: `comprovante_${supplier.name}_${payment.monthYear}${ext}`,
+            content: Buffer.from(dbFile.data, "base64"),
           });
         }
       }
