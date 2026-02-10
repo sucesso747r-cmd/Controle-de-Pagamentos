@@ -92,7 +92,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       <div className="flex-1 flex flex-col md:ml-64 min-h-screen">
         <header className="md:hidden h-16 border-b flex items-center justify-between px-4 bg-card/80 backdrop-blur-md sticky top-0 z-20">
-          <div className="font-bold font-heading">Gestão de Pagamentos</div>
+          <div className="font-bold font-heading flex items-center gap-2">
+            <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center text-primary-foreground text-xs">
+              <span className="font-bold">GP</span>
+            </div>
+            Gestão
+          </div>
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">

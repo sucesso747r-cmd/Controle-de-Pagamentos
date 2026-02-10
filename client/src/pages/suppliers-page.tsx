@@ -180,7 +180,7 @@ export default function SuppliersPage() {
             <TableRow>
               <TableHead>Nome</TableHead>
               <TableHead>Serviço</TableHead>
-              <TableHead>Tipo</TableHead>
+              <TableHead className="hidden sm:table-cell">Tipo</TableHead>
               <TableHead className="text-right w-[150px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -192,12 +192,12 @@ export default function SuppliersPage() {
                 <TableRow key={supplier.id} className="group" data-testid={`row-supplier-${supplier.id}`}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary"><Building2 className="w-4 h-4" /></div>
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 hidden sm:flex items-center justify-center text-primary"><Building2 className="w-4 h-4" /></div>
                       {supplier.name}
                     </div>
                   </TableCell>
                   <TableCell>{supplier.serviceName}</TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     {supplier.isRecurring ? (
                       <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20">MENSAL</Badge>
                     ) : (

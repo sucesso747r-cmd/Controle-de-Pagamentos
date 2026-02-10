@@ -242,7 +242,7 @@ export default function DashboardPage() {
           <h2 className="text-2xl font-bold tracking-tight font-heading">Status</h2>
           <p className="text-muted-foreground text-sm">Olá, {user?.firstName || user?.email?.split("@")[0]}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Button
             variant="outline"
             className="gap-2"
@@ -301,7 +301,7 @@ export default function DashboardPage() {
               <TableHeader>
                 <TableRow className="hover:bg-transparent border-b">
                   <TableHead className="w-[180px] font-bold text-foreground sticky left-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10">Fornecedor</TableHead>
-                  <TableHead className="w-[150px] font-bold text-foreground">Serviço</TableHead>
+                  <TableHead className="w-[150px] font-bold text-foreground hidden sm:table-cell">Serviço</TableHead>
                   {MONTHS.map(m => (
                     <TableHead key={m.id} className="text-center font-bold text-foreground min-w-[75px]">
                       {m.label}{currentYearSuffix}
@@ -328,7 +328,7 @@ export default function DashboardPage() {
                         </Tooltip>
                       </TooltipProvider>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{supplier.serviceName}</TableCell>
+                    <TableCell className="text-muted-foreground hidden sm:table-cell">{supplier.serviceName}</TableCell>
                     {MONTHS.map(m => (
                       <TableCell 
                         key={m.id} 
@@ -343,7 +343,7 @@ export default function DashboardPage() {
                 ))}
                 <TableRow className="hover:bg-transparent bg-[#cfe2ff] text-[#084298] font-bold border-t border-[#084298]/20">
                   <TableCell className="font-bold sticky left-0 bg-[#cfe2ff] z-10">TOTAL</TableCell>
-                  <TableCell className="bg-[#cfe2ff]" />
+                  <TableCell className="bg-[#cfe2ff] hidden sm:table-cell" />
                   {MONTHS.map(m => (
                     <TableCell key={m.id} className="text-center text-[10px] p-0 h-14 border-l border-[#084298]/10 first:border-l-0">
                       <div className="w-full h-full flex items-center justify-center">
@@ -354,7 +354,7 @@ export default function DashboardPage() {
                 </TableRow>
                 <TableRow className="hover:bg-transparent bg-[#0d47a1] text-white font-bold">
                   <TableCell className="font-bold sticky left-0 bg-[#0d47a1] z-10">TOTAL ANO {selectedYear}</TableCell>
-                  <TableCell />
+                  <TableCell className="hidden sm:table-cell" />
                   {MONTHS.map((m, i) => (
                     <TableCell key={m.id} className="text-center p-0 h-14 border-l border-white/10">
                       {i === MONTHS.length - 1 && (
@@ -372,7 +372,7 @@ export default function DashboardPage() {
       </Card>
 
       <Dialog open={!!selectedPayment} onOpenChange={(open) => !open && setSelectedPayment(null)}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="max-w-[95vw] sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold font-heading">Detalhes do Pagamento</DialogTitle>
           </DialogHeader>
@@ -429,7 +429,7 @@ export default function DashboardPage() {
               </div>
 
               {!selectedPayment.isArchived && (
-                <div className="flex gap-2 pt-2">
+                <div className="flex flex-col sm:flex-row gap-2 pt-2">
                   <Button 
                     variant="secondary" 
                     className="flex-1 gap-2" 
