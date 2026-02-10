@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { FlaskConical, Mail, Loader2, CheckCircle, ShieldCheck, MailCheck, BarChart3, Key, XCircle, ExternalLink } from "lucide-react";
+import { FlaskConical, Mail, Loader2, CheckCircle, ShieldCheck, MailCheck, BarChart3, Key } from "lucide-react";
 import { 
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -29,9 +29,7 @@ export default function SettingsPage() {
   const [copyEmail, setCopyEmail] = useState(user?.copyEmail || "");
   const [initialYear, setInitialYearLocal] = useState((user?.initialYear || 2025).toString());
   const [resendApiKey, setResendApiKey] = useState("");
-  const [emailProvider, setEmailProvider] = useState(user?.emailProvider || "none");
-  const [isConnectingGmail, setIsConnectingGmail] = useState(false);
-  const [isDisconnectingGmail, setIsDisconnectingGmail] = useState(false);
+  const [emailProvider, setEmailProvider] = useState(user?.emailProvider || "resend");
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -145,119 +143,34 @@ export default function SettingsPage() {
             <CardTitle className="text-xl font-heading flex items-center gap-2">
               <Key className="w-5 h-5 text-amber-500" />Provedor de Email
             </CardTitle>
-            <CardDescription>Escolha como enviar comprovantes: Gmail (OAuth, gratuito) ou Resend API.</CardDescription>
+            <CardDescription>Configure a chave da API Resend para envio de comprovantes.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <RadioGroup value={emailProvider} onValueChange={setEmailProvider}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="none" id="provider-none" />
-                <Label htmlFor="provider-none" className="cursor-pointer">Nenhum (desativado)</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="gmail" id="provider-gmail" />
-                <Label htmlFor="provider-gmail" className="cursor-pointer">Gmail (gratuito)</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="resend" id="provider-resend" />
-                <Label htmlFor="provider-resend" className="cursor-pointer">Resend API</Label>
-              </div>
-            </RadioGroup>
-
-            {emailProvider === "gmail" && (
-              <div className="space-y-4 pl-4 border-l-2 border-amber-200 animate-in fade-in slide-in-from-left-2 duration-200">
-                {(user as any)?.gmailConnected ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-                      <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium text-emerald-800" data-testid="text-gmail-connected">Gmail conectado como: {user?.gmailEmail}</p>
-                        {user?.gmailConnectedAt && (
-                          <p className="text-xs text-emerald-600">Conectado em {new Date(user.gmailConnectedAt).toLocaleDateString("pt-BR")}</p>
-                        )}
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2 text-red-600 border-red-200 hover:bg-red-50"
-                      disabled={isDisconnectingGmail}
-                      data-testid="button-disconnect-gmail"
-                      onClick={async () => {
-                        setIsDisconnectingGmail(true);
-                        try {
-                          await apiRequest("POST", "/api/gmail/disconnect");
-                          queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-                          setEmailProvider("none");
-                          toast({ title: "Gmail desconectado com sucesso." });
-                        } catch {
-                          toast({ variant: "destructive", title: "Erro ao desconectar Gmail." });
-                        } finally {
-                          setIsDisconnectingGmail(false);
-                        }
-                      }}
-                    >
-                      {isDisconnectingGmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
-                      Desconectar Gmail
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <p className="text-sm text-muted-foreground">
-                      Conecte sua conta Gmail para enviar comprovantes diretamente. Usamos autorização segura do Google (OAuth) — nenhuma senha é armazenada.
-                    </p>
-                    <Button
-                      className="gap-2"
-                      disabled={isConnectingGmail}
-                      data-testid="button-connect-gmail"
-                      onClick={async () => {
-                        setIsConnectingGmail(true);
-                        try {
-                          const res = await apiRequest("GET", "/api/gmail/auth");
-                          const { url } = await res.json();
-                          window.location.href = url;
-                        } catch {
-                          toast({ variant: "destructive", title: "Erro ao iniciar autorização do Gmail. Verifique se as credenciais OAuth estão configuradas." });
-                          setIsConnectingGmail(false);
-                        }
-                      }}
-                    >
-                      {isConnectingGmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
-                      Conectar Gmail
-                    </Button>
-                  </div>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="resend-api-key">Chave da API Resend</Label>
+                <Input id="resend-api-key" type="password" value={resendApiKey} onChange={(e) => setResendApiKey(e.target.value)} placeholder={(user as any)?.hasResendApiKey ? "••••••••••••••••••••••••••••" : "re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"} data-testid="input-resend-api-key" />
+                <p className="text-xs text-muted-foreground">
+                  Obtenha em <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">resend.com</a>.
+                </p>
+                {(user as any)?.hasResendApiKey && (
+                  <p className="text-xs text-emerald-600 flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" />
+                    Chave configurada
+                  </p>
                 )}
               </div>
-            )}
-
-            {emailProvider === "resend" && (
-              <div className="space-y-4 pl-4 border-l-2 border-amber-200 animate-in fade-in slide-in-from-left-2 duration-200">
-                <div className="space-y-2">
-                  <Label htmlFor="resend-api-key">Chave da API Resend</Label>
-                  <Input id="resend-api-key" type="password" value={resendApiKey} onChange={(e) => setResendApiKey(e.target.value)} placeholder={(user as any)?.hasResendApiKey ? "••••••••••••••••••••••••••••" : "re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"} data-testid="input-resend-api-key" />
-                  <p className="text-xs text-muted-foreground">
-                    Obtenha em <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">resend.com</a>.
-                  </p>
-                  {(user as any)?.hasResendApiKey && (
-                    <p className="text-xs text-emerald-600 flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" />
-                      Chave configurada
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
+            </div>
 
             <Button
               onClick={() => {
-                const data: any = { emailProvider };
-                if (emailProvider === "resend") {
-                  if (resendApiKey.trim()) {
-                    data.resendApiKey = resendApiKey.trim();
-                  }
+                const data: any = { emailProvider: "resend" };
+                if (resendApiKey.trim()) {
+                  data.resendApiKey = resendApiKey.trim();
                 }
                 updateSettingsMutation.mutate(data, {
                   onSuccess: () => {
-                    toast({ title: "Provedor de email salvo com sucesso!" });
+                    toast({ title: "Chave da API Resend salva com sucesso!" });
                     setResendApiKey("");
                   },
                 });
@@ -265,7 +178,7 @@ export default function SettingsPage() {
               className="w-full sm:w-auto"
               data-testid="button-save-provider"
             >
-              Salvar Provedor
+              Salvar
             </Button>
           </CardContent>
         </Card>
