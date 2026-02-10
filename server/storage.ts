@@ -6,6 +6,35 @@ import {
   type Payment, type InsertPayment,
   type Service, type InsertService,
 } from "@shared/schema";
+import { encrypt, decrypt, isEncrypted } from "./crypto";
+
+const SENSITIVE_USER_FIELDS = ["resendApiKey", "gmailRefreshToken"] as const;
+
+function encryptSensitiveFields(data: Record<string, any>): Record<string, any> {
+  const result = { ...data };
+  for (const field of SENSITIVE_USER_FIELDS) {
+    if (result[field] && typeof result[field] === "string" && result[field].length > 0) {
+      if (!isEncrypted(result[field])) {
+        result[field] = encrypt(result[field]);
+      }
+    }
+  }
+  return result;
+}
+
+function decryptSensitiveFields(user: User): User {
+  const result = { ...user } as any;
+  for (const field of SENSITIVE_USER_FIELDS) {
+    if (result[field] && typeof result[field] === "string" && isEncrypted(result[field])) {
+      try {
+        result[field] = decrypt(result[field]);
+      } catch {
+        result[field] = null;
+      }
+    }
+  }
+  return result;
+}
 
 export type DbFile = typeof files.$inferSelect;
 
@@ -38,7 +67,7 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   async getUser(userId: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, userId));
-    return user;
+    return user ? decryptSensitiveFields(user) : undefined;
   }
 
   async getServices(): Promise<Service[]> {
@@ -52,11 +81,12 @@ export class DatabaseStorage implements IStorage {
 
   async updateUserSettings(userId: string, settings: Partial<User>): Promise<User> {
     const { id, email, firstName, lastName, profileImageUrl, createdAt, updatedAt, ...safeSettings } = settings as any;
+    const encryptedSettings = encryptSensitiveFields(safeSettings);
     const [user] = await db.update(users)
-      .set(safeSettings)
+      .set(encryptedSettings)
       .where(eq(users.id, userId))
       .returning();
-    return user;
+    return decryptSensitiveFields(user);
   }
 
   async getSuppliers(ownerId: string): Promise<Supplier[]> {

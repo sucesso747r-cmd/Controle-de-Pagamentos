@@ -47,3 +47,8 @@ waitForPort = 5000
 stack = "MOCKUP_JS"
 mockupState = "FULLSTACK"
 integrations = ["javascript_log_in_with_replit:2.0.0"]
+
+[userenv]
+
+[userenv.shared]
+ENCRYPTION_KEY = "026acd047671eedf5fce8e935f028775f72660d6f1c0ad07043954ff02c6a3a6"

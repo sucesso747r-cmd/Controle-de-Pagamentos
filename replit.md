@@ -63,7 +63,9 @@ Full-stack web application for supplier payment tracking with OAuth authenticati
 - OAuth via Replit Auth (Google, GitHub, X, Apple, email)
 - Dual email provider: Gmail (OAuth 2.0, googleapis) or Resend API (RESEND_API_KEY secret)
 - Email provider selection stored per-user (emailProvider field: none/gmail/resend)
-- Gmail OAuth: refresh tokens stored in DB, access tokens refreshed automatically via google-auth-library
+- Sensitive fields (resendApiKey, gmailRefreshToken) encrypted with AES-256-GCM before DB storage, decrypted on read
+- Encryption key stored in ENCRYPTION_KEY env var, key derived via SHA-256
+- Gmail OAuth: refresh tokens stored encrypted in DB, access tokens refreshed automatically via google-auth-library
 - Email sending via Gmail API (not SMTP), requires GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET secrets
 - File storage in PostgreSQL (base64 in files table) for production persistence across deploys
 - Multer uses memory storage, files saved to DB immediately after upload
