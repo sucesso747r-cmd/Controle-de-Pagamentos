@@ -22,6 +22,7 @@ export interface IStorage {
 
   getPayments(ownerId: string): Promise<Payment[]>;
   getPayment(id: string, ownerId: string): Promise<Payment | undefined>;
+  getPaymentByIdempotencyKey(key: string, ownerId: string): Promise<Payment | undefined>;
   createPayment(data: InsertPayment & { ownerId: string }): Promise<Payment>;
   updatePayment(id: string, ownerId: string, data: Partial<InsertPayment>): Promise<Payment>;
   deletePayment(id: string, ownerId: string): Promise<void>;
@@ -86,6 +87,12 @@ export class DatabaseStorage implements IStorage {
   async getPayment(id: string, ownerId: string): Promise<Payment | undefined> {
     const [payment] = await db.select().from(payments)
       .where(and(eq(payments.id, id), eq(payments.ownerId, ownerId)));
+    return payment;
+  }
+
+  async getPaymentByIdempotencyKey(key: string, ownerId: string): Promise<Payment | undefined> {
+    const [payment] = await db.select().from(payments)
+      .where(and(eq(payments.idempotencyKey, key), eq(payments.ownerId, ownerId)));
     return payment;
   }
 

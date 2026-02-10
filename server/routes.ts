@@ -171,6 +171,15 @@ export async function registerRoutes(
   ]), async (req, res) => {
     try {
       const userId = getUserId(req);
+      const idempotencyKey = req.body.idempotencyKey as string | undefined;
+
+      if (idempotencyKey) {
+        const existing = await storage.getPaymentByIdempotencyKey(idempotencyKey, userId);
+        if (existing) {
+          return res.json(existing);
+        }
+      }
+
       const files = req.files as { [key: string]: Express.Multer.File[] };
       const faturaFile = files?.fatura?.[0];
       const comprovanteFile = files?.comprovante?.[0];
@@ -185,6 +194,7 @@ export async function registerRoutes(
         fileUrl: faturaFile ? `/uploads/${faturaFile.filename}` : null,
         receiptUrl: comprovanteFile ? `/uploads/${comprovanteFile.filename}` : null,
         ownerId: userId,
+        idempotencyKey: idempotencyKey || null,
       };
 
       const payment = await storage.createPayment(paymentData);

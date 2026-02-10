@@ -178,6 +178,8 @@ export default function PaymentPage() {
       if (!keepComprovante && comprovante) formData.append("comprovante", comprovante);
       updateMutation.mutate({ id: editingId, formData });
     } else {
+      const idempotencyKey = crypto.randomUUID();
+      formData.append("idempotencyKey", idempotencyKey);
       if (fatura) formData.append("fatura", fatura);
       if (comprovante) formData.append("comprovante", comprovante);
       createMutation.mutate(formData);
@@ -359,8 +361,8 @@ export default function PaymentPage() {
                     <Button type="button" variant="outline" className="h-12 px-6 gap-2" onClick={() => setStep(1)}>
                       <ChevronLeft className="w-5 h-5" />Voltar
                     </Button>
-                    <Button type="submit" className="flex-1 h-12 text-base font-bold bg-emerald-600 hover:bg-emerald-700 text-white" data-testid="button-submit-payment">
-                      {editingId ? "Salvar Alterações" : "Registrar Pagamento"}
+                    <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="flex-1 h-12 text-base font-bold bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50" data-testid="button-submit-payment">
+                      {(createMutation.isPending || updateMutation.isPending) ? "Enviando..." : editingId ? "Salvar Alterações" : "Registrar Pagamento"}
                     </Button>
                   </div>
                 </div>
