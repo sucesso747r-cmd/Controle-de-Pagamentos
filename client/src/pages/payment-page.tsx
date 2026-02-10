@@ -69,7 +69,9 @@ export default function PaymentPage() {
   const editingPayment = editingId ? payments.find(p => p.id === editingId) : null;
   const supplier = suppliers.find(s => s.id === (editingPayment?.supplierId || params.get("supplierId")));
 
-  const selectedYear = new Date().getFullYear();
+  const paramMonthYear = params.get("monthYear");
+  const yearSuffixFromParam = paramMonthYear ? paramMonthYear.replace(/^[a-z]+/, "") : null;
+  const selectedYear = yearSuffixFromParam ? 2000 + parseInt(yearSuffixFromParam) : new Date().getFullYear();
   const currentYearSuffix = selectedYear.toString().slice(-2);
 
   const form = useForm<PaymentFormValues>({
