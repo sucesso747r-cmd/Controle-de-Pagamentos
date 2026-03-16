@@ -52,3 +52,4 @@ integrations = ["javascript_log_in_with_replit:2.0.0"]
 
 [userenv.shared]
 ENCRYPTION_KEY = "026acd047671eedf5fce8e935f028775f72660d6f1c0ad07043954ff02c6a3a6"
+DATABASE_URL = "postgresql://neondb_owner:npg_pbA8axTNDKH4@ep-green-darkness-accbczqc-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
