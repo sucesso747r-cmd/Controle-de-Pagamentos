@@ -17,7 +17,7 @@ import { useState } from "react";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logoutMutation } = useAuth();
   const [open, setOpen] = useState(false);
 
   const navItems = [
@@ -32,7 +32,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   ];
 
   const handleLogout = () => {
-    logout();
+    logoutMutation.mutate();
   };
 
   const NavContent = () => (

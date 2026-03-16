@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: i9star_app_prd
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgres://i9star_prd_user:i9star_prd_pwd@postgres:5432/i9star_prd_db
+      APP_SECRET: prd_change_this_secret_in_production
+    depends_on:
+      postgres:
+        condition: service_started
+    ports:
+      - "3000:3000"
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: i9star_postgres_prd
+    restart: always
+    environment:
+      POSTGRES_USER: i9star_prd_user
+      POSTGRES_PASSWORD: i9star_prd_pwd
+      POSTGRES_DB: i9star_prd_db
+    volumes:
+      - pgdata_prd:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  pgdata_prd:

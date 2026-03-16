@@ -23,7 +23,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <a href="/api/login" data-testid="button-login-hero">
+          <a href="/auth" data-testid="button-login-hero">
             <Button size="lg" className="h-14 px-10 text-lg font-bold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all">
               Iniciar
             </Button>

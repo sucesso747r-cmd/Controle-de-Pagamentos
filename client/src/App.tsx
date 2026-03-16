@@ -11,6 +11,7 @@ import PaymentPage from "@/pages/payment-page";
 import AnalyticsPage from "@/pages/analytics-page";
 import SettingsPage from "@/pages/settings-page";
 import HelpPage from "@/pages/help-page";
+import AuthPage from "@/pages/auth-page";
 import Layout from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
@@ -45,6 +46,9 @@ function Router() {
     <Switch>
       <Route path="/">
         <ProtectedRoute component={DashboardPage} />
+      </Route>
+      <Route path="/auth">
+        <AuthPage />
       </Route>
 
       <Route path="/analytics">

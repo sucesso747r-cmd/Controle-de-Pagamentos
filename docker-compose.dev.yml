@@ -1,0 +1,32 @@
+services:
+  app:
+    build: .
+    container_name: i9star_app_dev
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgres://i9star_dev_user:i9star_dev_pwd@postgres:5432/i9star_dev_db
+      APP_SECRET: dev_change_this_secret
+    depends_on:
+      - postgres
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    command: npm run dev
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: i9star_postgres_dev
+    environment:
+      POSTGRES_USER: i9star_dev_user
+      POSTGRES_PASSWORD: i9star_dev_pwd
+      POSTGRES_DB: i9star_dev_db
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  pgdata_dev:
