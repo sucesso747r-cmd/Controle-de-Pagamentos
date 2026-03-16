@@ -9,18 +9,20 @@ import fs from "fs";
 import { randomUUID } from "crypto";
 import { Resend } from "resend";
 import XLSX from "xlsx";
-import { google } from "googleapis";
-import { OAuth2Client } from "google-auth-library";
+// Gmail OAuth imports — commented out along with Gmail OAuth code
+// import { google } from "googleapis";
+// import { OAuth2Client } from "google-auth-library";
 
-function getGmailOAuthClient(): OAuth2Client {
-  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
-  if (!clientId || !clientSecret) {
-    throw new Error("GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET must be configured");
-  }
-  const redirectUri = `${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : "http://localhost:5000"}/api/gmail/callback`;
-  return new OAuth2Client(clientId, clientSecret, redirectUri);
-}
+// Gmail OAuth commented out — app uses Replit Auth + Resend for email.
+// function getGmailOAuthClient(): OAuth2Client {
+//   const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+//   const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+//   if (!clientId || !clientSecret) {
+//     throw new Error("GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET must be configured");
+//   }
+//   const redirectUri = `${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : "http://localhost:5000"}/api/gmail/callback`;
+//   return new OAuth2Client(clientId, clientSecret, redirectUri);
+// }
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -91,10 +93,7 @@ export async function registerRoutes(
       const { gmailRefreshToken: _dropped1, gmailEmail: _dropped2, gmailConnectedAt: _dropped3, ...safeData } = data as any;
 
       if (safeData.emailProvider === "gmail") {
-        const currentUser = await storage.getUser(userId);
-        if (!currentUser?.gmailRefreshToken) {
-          return res.status(400).json({ message: "Conecte sua conta Gmail antes de selecionar como provedor." });
-        }
+        return res.status(400).json({ message: "Gmail não está disponível no momento. Use Resend como provedor de email." });
       }
 
       const user = await storage.updateUserSettings(userId, safeData);
@@ -109,84 +108,84 @@ export async function registerRoutes(
     }
   });
 
-  // GMAIL OAUTH
-  app.get("/api/gmail/auth", isAuthenticated, async (_req, res) => {
-    try {
-      const oauth2Client = getGmailOAuthClient();
-      const authUrl = oauth2Client.generateAuthUrl({
-        access_type: "offline",
-        prompt: "consent",
-        scope: ["https://www.googleapis.com/auth/gmail.send", "https://www.googleapis.com/auth/userinfo.email"],
-      });
-      res.json({ url: authUrl });
-    } catch (err: any) {
-      res.status(500).json({ message: err.message });
-    }
-  });
-
-  app.get("/api/gmail/callback", isAuthenticated, async (req, res) => {
-    try {
-      const code = req.query.code as string;
-      const error = req.query.error as string;
-
-      if (error) {
-        return res.redirect("/?gmail_error=denied");
-      }
-      if (!code) {
-        return res.redirect("/?gmail_error=no_code");
-      }
-
-      const userId = getUserId(req);
-
-      const oauth2Client = getGmailOAuthClient();
-      const { tokens } = await oauth2Client.getToken(code);
-
-      if (!tokens.refresh_token) {
-        return res.redirect("/?gmail_error=no_refresh_token");
-      }
-
-      oauth2Client.setCredentials(tokens);
-      const oauth2 = google.oauth2({ version: "v2", auth: oauth2Client });
-      const { data: userInfo } = await oauth2.userinfo.get();
-
-      await storage.updateUserSettings(userId, {
-        gmailRefreshToken: tokens.refresh_token,
-        gmailEmail: userInfo.email || undefined,
-        gmailConnectedAt: new Date(),
-        emailProvider: "gmail",
-      } as any);
-
-      res.redirect("/?gmail_connected=true");
-    } catch (err: any) {
-      console.error("Gmail OAuth callback error:", err);
-      res.redirect("/?gmail_error=token_exchange_failed");
-    }
-  });
-
-  app.post("/api/gmail/disconnect", isAuthenticated, async (req, res) => {
-    try {
-      const userId = getUserId(req);
-      const user = await storage.getUser(userId);
-
-      if (user?.gmailRefreshToken) {
-        try {
-          const oauth2Client = getGmailOAuthClient();
-          await oauth2Client.revokeToken(user.gmailRefreshToken);
-        } catch {}
-      }
-
-      await storage.updateUserSettings(userId, {
-        gmailRefreshToken: null,
-        gmailEmail: null,
-        gmailConnectedAt: null,
-        emailProvider: "none",
-      } as any);
-
-      res.json({ ok: true });
-    } catch (err: any) {
-      res.status(500).json({ message: err.message });
-    }
-  });
+  // GMAIL OAUTH — commented out, app uses Replit Auth + Resend for email.
+  // app.get("/api/gmail/auth", isAuthenticated, async (_req, res) => {
+  //   try {
+  //     const oauth2Client = getGmailOAuthClient();
+  //     const authUrl = oauth2Client.generateAuthUrl({
+  //       access_type: "offline",
+  //       prompt: "consent",
+  //       scope: ["https://www.googleapis.com/auth/gmail.send", "https://www.googleapis.com/auth/userinfo.email"],
+  //     });
+  //     res.json({ url: authUrl });
+  //   } catch (err: any) {
+  //     res.status(500).json({ message: err.message });
+  //   }
+  // });
+  //
+  // app.get("/api/gmail/callback", isAuthenticated, async (req, res) => {
+  //   try {
+  //     const code = req.query.code as string;
+  //     const error = req.query.error as string;
+  //
+  //     if (error) {
+  //       return res.redirect("/?gmail_error=denied");
+  //     }
+  //     if (!code) {
+  //       return res.redirect("/?gmail_error=no_code");
+  //     }
+  //
+  //     const userId = getUserId(req);
+  //
+  //     const oauth2Client = getGmailOAuthClient();
+  //     const { tokens } = await oauth2Client.getToken(code);
+  //
+  //     if (!tokens.refresh_token) {
+  //       return res.redirect("/?gmail_error=no_refresh_token");
+  //     }
+  //
+  //     oauth2Client.setCredentials(tokens);
+  //     const oauth2 = google.oauth2({ version: "v2", auth: oauth2Client });
+  //     const { data: userInfo } = await oauth2.userinfo.get();
+  //
+  //     await storage.updateUserSettings(userId, {
+  //       gmailRefreshToken: tokens.refresh_token,
+  //       gmailEmail: userInfo.email || undefined,
+  //       gmailConnectedAt: new Date(),
+  //       emailProvider: "gmail",
+  //     } as any);
+  //
+  //     res.redirect("/?gmail_connected=true");
+  //   } catch (err: any) {
+  //     console.error("Gmail OAuth callback error:", err);
+  //     res.redirect("/?gmail_error=token_exchange_failed");
+  //   }
+  // });
+  //
+  // app.post("/api/gmail/disconnect", isAuthenticated, async (req, res) => {
+  //   try {
+  //     const userId = getUserId(req);
+  //     const user = await storage.getUser(userId);
+  //
+  //     if (user?.gmailRefreshToken) {
+  //       try {
+  //         const oauth2Client = getGmailOAuthClient();
+  //         await oauth2Client.revokeToken(user.gmailRefreshToken);
+  //       } catch {}
+  //     }
+  //
+  //     await storage.updateUserSettings(userId, {
+  //       gmailRefreshToken: null,
+  //       gmailEmail: null,
+  //       gmailConnectedAt: null,
+  //       emailProvider: "none",
+  //     } as any);
+  //
+  //     res.json({ ok: true });
+  //   } catch (err: any) {
+  //     res.status(500).json({ message: err.message });
+  //   }
+  // });
 
   // SERVICES
   app.get("/api/services", isAuthenticated, async (_req, res) => {
@@ -424,76 +423,74 @@ export async function registerRoutes(
       const provider = user.emailProvider || "none";
 
       if (provider === "none") {
-        return res.status(400).json({ message: "Nenhum provedor de email configurado. Ative Gmail SMTP ou Resend nas Configurações." });
+        return res.status(400).json({ message: "Nenhum provedor de email configurado. Ative Resend nas Configurações." });
       }
 
       if (provider === "gmail") {
-        if (!user.gmailRefreshToken) {
-          return res.status(401).json({ message: "Gmail não conectado. Conecte sua conta Gmail nas Configurações." });
-        }
+        return res.status(400).json({ message: "Gmail não está disponível no momento. Configure Resend nas Configurações." });
+      }
 
-        try {
-          const oauth2Client = getGmailOAuthClient();
-          oauth2Client.setCredentials({ refresh_token: user.gmailRefreshToken });
-
-          const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-
-          const boundary = `boundary_${randomUUID()}`;
-          const fromHeader = `${user.firstName || "Pagamentos"} <${user.gmailEmail}>`;
-          const toHeader = recipients.join(", ");
-
-          let rawEmail = [
-            `From: ${fromHeader}`,
-            `To: ${toHeader}`,
-            ...(cc.length > 0 ? [`Cc: ${cc.join(", ")}`] : []),
-            ...(bcc.length > 0 ? [`Bcc: ${bcc.join(", ")}`] : []),
-            `Subject: =?UTF-8?B?${Buffer.from(subject).toString("base64")}?=`,
-            `MIME-Version: 1.0`,
-            `Content-Type: multipart/mixed; boundary="${boundary}"`,
-            ``,
-            `--${boundary}`,
-            `Content-Type: text/plain; charset="UTF-8"`,
-            `Content-Transfer-Encoding: base64`,
-            ``,
-            Buffer.from(body).toString("base64"),
-          ].join("\r\n");
-
-          for (const att of attachments) {
-            rawEmail += [
-              ``,
-              `--${boundary}`,
-              `Content-Type: application/octet-stream; name="${att.filename}"`,
-              `Content-Disposition: attachment; filename="${att.filename}"`,
-              `Content-Transfer-Encoding: base64`,
-              ``,
-              att.content.toString("base64"),
-            ].join("\r\n");
-          }
-
-          rawEmail += `\r\n--${boundary}--`;
-
-          const encodedMessage = Buffer.from(rawEmail)
-            .toString("base64")
-            .replace(/\+/g, "-")
-            .replace(/\//g, "_")
-            .replace(/=+$/, "");
-
-          await gmail.users.messages.send({
-            userId: "me",
-            requestBody: { raw: encodedMessage },
-          });
-        } catch (gmailErr: any) {
-          console.error("Gmail API error:", gmailErr);
-          if (gmailErr?.code === 401 || gmailErr?.message?.includes("invalid_grant")) {
-            await storage.updateUserSettings(userId, {
-              gmailRefreshToken: null,
-              gmailConnectedAt: null,
-            } as any);
-            return res.status(401).json({ message: "Autorização do Gmail expirada. Reconecte sua conta nas Configurações." });
-          }
-          return res.status(500).json({ message: "Erro ao enviar email via Gmail. Tente novamente." });
-        }
-      } else if (provider === "resend") {
+      // Gmail sending branch commented out — app uses Resend for email.
+      // if (provider === "gmail") {
+      //   if (!user.gmailRefreshToken) {
+      //     return res.status(401).json({ message: "Gmail não conectado. Conecte sua conta Gmail nas Configurações." });
+      //   }
+      //   try {
+      //     const oauth2Client = getGmailOAuthClient();
+      //     oauth2Client.setCredentials({ refresh_token: user.gmailRefreshToken });
+      //     const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+      //     const boundary = `boundary_${randomUUID()}`;
+      //     const fromHeader = `${user.firstName || "Pagamentos"} <${user.gmailEmail}>`;
+      //     const toHeader = recipients.join(", ");
+      //     let rawEmail = [
+      //       `From: ${fromHeader}`,
+      //       `To: ${toHeader}`,
+      //       ...(cc.length > 0 ? [`Cc: ${cc.join(", ")}`] : []),
+      //       ...(bcc.length > 0 ? [`Bcc: ${bcc.join(", ")}`] : []),
+      //       `Subject: =?UTF-8?B?${Buffer.from(subject).toString("base64")}?=`,
+      //       `MIME-Version: 1.0`,
+      //       `Content-Type: multipart/mixed; boundary="${boundary}"`,
+      //       ``,
+      //       `--${boundary}`,
+      //       `Content-Type: text/plain; charset="UTF-8"`,
+      //       `Content-Transfer-Encoding: base64`,
+      //       ``,
+      //       Buffer.from(body).toString("base64"),
+      //     ].join("\r\n");
+      //     for (const att of attachments) {
+      //       rawEmail += [
+      //         ``,
+      //         `--${boundary}`,
+      //         `Content-Type: application/octet-stream; name="${att.filename}"`,
+      //         `Content-Disposition: attachment; filename="${att.filename}"`,
+      //         `Content-Transfer-Encoding: base64`,
+      //         ``,
+      //         att.content.toString("base64"),
+      //       ].join("\r\n");
+      //     }
+      //     rawEmail += `\r\n--${boundary}--`;
+      //     const encodedMessage = Buffer.from(rawEmail)
+      //       .toString("base64")
+      //       .replace(/\+/g, "-")
+      //       .replace(/\//g, "_")
+      //       .replace(/=+$/, "");
+      //     await gmail.users.messages.send({
+      //       userId: "me",
+      //       requestBody: { raw: encodedMessage },
+      //     });
+      //   } catch (gmailErr: any) {
+      //     console.error("Gmail API error:", gmailErr);
+      //     if (gmailErr?.code === 401 || gmailErr?.message?.includes("invalid_grant")) {
+      //       await storage.updateUserSettings(userId, {
+      //         gmailRefreshToken: null,
+      //         gmailConnectedAt: null,
+      //       } as any);
+      //       return res.status(401).json({ message: "Autorização do Gmail expirada. Reconecte sua conta nas Configurações." });
+      //     }
+      //     return res.status(500).json({ message: "Erro ao enviar email via Gmail. Tente novamente." });
+      //   }
+      // } else
+      if (provider === "resend") {
         const apiKey = user.resendApiKey || process.env.RESEND_API_KEY;
         if (!apiKey) {
           return res.status(400).json({ message: "Chave da API Resend não configurada. Adicione nas Configurações." });

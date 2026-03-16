@@ -1,9 +1,13 @@
 # Gestão de Pagamentos - Supplier Payment Tracking
 
 ## Overview
-Full-stack web application for supplier payment tracking with OAuth authentication (Replit Auth / Google). All UI in Portuguese (PT-BR) with minimalist, mobile-optimized design.
+Full-stack web application for supplier payment tracking with Replit Auth. All UI in Portuguese (PT-BR) with minimalist, mobile-optimized design.
 
 ## Recent Changes
+- 2026-03-16: Simplified landing page — removed feature cards, preview panel, Google branding; single centered layout with "Iniciar" button
+- 2026-03-16: Commented out Gmail OAuth backend routes (/api/gmail/auth, /api/gmail/callback, /api/gmail/disconnect) and getGmailOAuthClient function
+- 2026-03-16: Commented out Gmail sending branch in send-receipt endpoint; only Resend is active
+- 2026-03-16: Commented out GmailOAuthHandler component in App.tsx
 - 2026-02-10: Replaced Gmail app password with Gmail OAuth 2.0 (googleapis, google-auth-library)
 - 2026-02-10: Added Gmail OAuth routes: /api/gmail/auth, /api/gmail/callback, /api/gmail/disconnect
 - 2026-02-10: Email sending now uses Gmail API (not SMTP) with refresh tokens
@@ -15,7 +19,7 @@ Full-stack web application for supplier payment tracking with OAuth authenticati
 - 2026-02-09: Implemented dual email provider system (Gmail SMTP + Resend API) with radio toggle in Settings
 - 2026-02-09: Added "Enviar comprovante por email" button to payment details modal (Resend API)
 - 2026-02-09: Switched from manual email/password auth to Replit Auth (OAuth with Google, GitHub, etc.)
-- 2026-02-09: Created landing page with "Entrar com Google" button for unauthenticated users
+- 2026-02-09: Created landing page with "Iniciar" button for unauthenticated users
 - 2026-02-09: Updated user model to use OAuth claims (firstName, lastName, profileImageUrl)
 - 2026-02-09: Added file ownership verification on /uploads endpoint for multi-tenant security
 
@@ -34,7 +38,7 @@ Full-stack web application for supplier payment tracking with OAuth authenticati
 - `server/storage.ts` - DatabaseStorage class with CRUD operations
 - `server/routes.ts` - API routes (suppliers, payments, settings, file uploads)
 - `client/src/hooks/use-auth.ts` - useAuth hook for OAuth state
-- `client/src/pages/landing-page.tsx` - Landing page with "Entrar com Google"
+- `client/src/pages/landing-page.tsx` - Simplified landing page with "Iniciar" button
 - `client/src/App.tsx` - Router with protected routes
 
 ### Database Tables
@@ -54,19 +58,19 @@ Full-stack web application for supplier payment tracking with OAuth authenticati
 - POST /api/payments/archive/:year - Archive year's files
 - POST /api/payments/:id/send-receipt - Send payment receipt email via Resend API
 
-### API Endpoints (Gmail OAuth)
-- GET /api/gmail/auth - Get Gmail OAuth authorization URL
-- GET /api/gmail/callback - Handle Google redirect with authorization code
-- POST /api/gmail/disconnect - Revoke Gmail access and clear tokens
+### API Endpoints (Gmail OAuth — commented out)
+- GET /api/gmail/auth - (commented out) Get Gmail OAuth authorization URL
+- GET /api/gmail/callback - (commented out) Handle Google redirect with authorization code
+- POST /api/gmail/disconnect - (commented out) Revoke Gmail access and clear tokens
 
 ### Design Decisions
 - OAuth via Replit Auth (Google, GitHub, X, Apple, email)
-- Dual email provider: Gmail (OAuth 2.0, googleapis) or Resend API (RESEND_API_KEY secret)
-- Email provider selection stored per-user (emailProvider field: none/gmail/resend)
+- Email provider: Resend API (RESEND_API_KEY secret). Gmail OAuth code is commented out but preserved.
+- Email provider selection stored per-user (emailProvider field: none/resend)
 - Sensitive fields (resendApiKey, gmailRefreshToken) encrypted with AES-256-GCM before DB storage, decrypted on read
 - Encryption key stored in ENCRYPTION_KEY env var, key derived via SHA-256
-- Gmail OAuth: refresh tokens stored encrypted in DB, access tokens refreshed automatically via google-auth-library
-- Email sending via Gmail API (not SMTP), requires GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET secrets
+- Gmail OAuth code is commented out but preserved; refresh tokens were stored encrypted in DB
+- Gmail sending code commented out; was via Gmail API (not SMTP), required GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET secrets
 - File storage in PostgreSQL (base64 in files table) for production persistence across deploys
 - Multer uses memory storage, files saved to DB immediately after upload
 - GET /api/files/:id serves files from DB with ownership check (ownerId match)
@@ -78,4 +82,4 @@ Full-stack web application for supplier payment tracking with OAuth authenticati
 ## User Preferences
 - UI language: Portuguese (PT-BR)
 - Minimalist design with mobile optimization
-- OAuth login ("Entrar com Google") as per original design
+- Landing page uses simple "Iniciar" button (no Google branding)
