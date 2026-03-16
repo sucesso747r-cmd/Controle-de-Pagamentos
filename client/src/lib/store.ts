@@ -28,7 +28,6 @@ export interface Payment {
   fileUrl?: string; // invoice file (fatura)
   receiptUrl?: string; // receipt file (comprovante)
   registrationDate: string;
-  isArchived: boolean;
   status: 'paid' | 'pending' | 'overdue';
 }
 
@@ -68,9 +67,9 @@ export const useStore = create<AppState>((set) => ({
     { id: '4', name: 'TechSolutions', serviceName: 'Manutenção PC', isRecurring: false, ownerId: 'u1' },
   ],
   payments: [
-    { id: 'p1', supplierId: '1', amount: 129.90, monthYear: 'jan26', status: 'paid', registrationDate: '2026-01-10T10:00:00Z', isArchived: false, pixKey: 'vivo@pix.com.br', dueDay: 10, fileUrl: 'mock-fatura.pdf', receiptUrl: 'mock-comprovante.jpg' },
-    { id: 'p2', supplierId: '2', amount: 85.50, monthYear: 'jan26', status: 'paid', registrationDate: '2026-01-15T14:30:00Z', isArchived: false, pixKey: 'contas@sabesp.sp.gov.br', dueDay: 15, fileUrl: 'mock-fatura.pdf', receiptUrl: 'mock-comprovante.jpg' },
-    { id: 'p3', supplierId: '1', amount: 129.90, monthYear: 'fev26', status: 'paid', registrationDate: '2026-02-10T10:00:00Z', isArchived: false, pixKey: 'vivo@pix.com.br', dueDay: 10, fileUrl: 'mock-fatura.pdf', receiptUrl: 'mock-comprovante.jpg' },
+    { id: 'p1', supplierId: '1', amount: 129.90, monthYear: 'jan26', status: 'paid', registrationDate: '2026-01-10T10:00:00Z', pixKey: 'vivo@pix.com.br', dueDay: 10, fileUrl: 'mock-fatura.pdf', receiptUrl: 'mock-comprovante.jpg' },
+    { id: 'p2', supplierId: '2', amount: 85.50, monthYear: 'jan26', status: 'paid', registrationDate: '2026-01-15T14:30:00Z', pixKey: 'contas@sabesp.sp.gov.br', dueDay: 15, fileUrl: 'mock-fatura.pdf', receiptUrl: 'mock-comprovante.jpg' },
+    { id: 'p3', supplierId: '1', amount: 129.90, monthYear: 'fev26', status: 'paid', registrationDate: '2026-02-10T10:00:00Z', pixKey: 'vivo@pix.com.br', dueDay: 10, fileUrl: 'mock-fatura.pdf', receiptUrl: 'mock-comprovante.jpg' },
   ],
   login: (user) => set({ user }),
   logout: () => set({ user: null }),
