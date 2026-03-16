@@ -57,7 +57,8 @@ export interface IStorage {
   createPayment(data: InsertPayment & { ownerId: string }): Promise<Payment>;
   updatePayment(id: string, ownerId: string, data: Partial<InsertPayment>): Promise<Payment>;
   deletePayment(id: string, ownerId: string): Promise<void>;
-  archiveYear(ownerId: string, yearSuffix: string): Promise<void>;
+  // ARCHIVE FEATURE REMOVED
+  // archiveYear(ownerId: string, yearSuffix: string): Promise<void>;
 
   saveFile(filename: string, mimeType: string, data: string, ownerId: string): Promise<DbFile>;
   getFile(id: string): Promise<DbFile | undefined>;
@@ -159,6 +160,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(payments).where(and(eq(payments.id, id), eq(payments.ownerId, ownerId)));
   }
 
+  /* ARCHIVE FEATURE REMOVED
   async archiveYear(ownerId: string, yearSuffix: string): Promise<void> {
     const allPayments = await this.getPayments(ownerId);
     const toArchive = allPayments.filter(p => p.monthYear.endsWith(yearSuffix));
@@ -176,6 +178,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(payments.id, p.id));
     }
   }
+  */
 
   async saveFile(filename: string, mimeType: string, data: string, ownerId: string): Promise<DbFile> {
     const [file] = await db.insert(files).values({ filename, mimeType, data, ownerId }).returning();

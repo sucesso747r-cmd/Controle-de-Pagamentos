@@ -88,20 +88,6 @@ export default function HelpCenterPage() {
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="archive" className="border rounded-lg px-4 bg-card/50 mt-2">
-              <AccordionTrigger className="hover:no-underline font-medium">Como arquivar o ano fiscal?</AccordionTrigger>
-              <AccordionContent className="text-muted-foreground space-y-2">
-                <ol className="list-decimal pl-4 space-y-1">
-                  <li>Certifique-se que todos os pagamentos do ano estão registrados</li>
-                  <li>Vá para a tela Status</li>
-                  <li>Clique no botão "Arquivar Ano [YYYY]" (disponível apenas no fim do ano)</li>
-                  <li>Confirme a operação</li>
-                  <li>Faça download do arquivo ZIP gerado</li>
-                  <li>Salve o arquivo em local seguro (nuvem ou HD externo)</li>
-                </ol>
-                <p className="text-sm font-bold text-rose-500 mt-2">Importante: Após confirmar, os arquivos serão removidos do sistema. Certifique-se de fazer o download!</p>
-              </AccordionContent>
-            </AccordionItem>
 
             <AccordionItem value="emails" className="border rounded-lg px-4 bg-card/50 mt-2">
               <AccordionTrigger className="hover:no-underline font-medium">Como configurar emails?</AccordionTrigger>

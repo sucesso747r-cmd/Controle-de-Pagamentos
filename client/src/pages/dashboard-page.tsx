@@ -6,7 +6,6 @@ import { useLocation } from "wouter";
 import { 
   ChevronLeft, 
   ChevronRight, 
-  Archive, 
   FileText, 
   Receipt,
   Pencil,
@@ -90,9 +89,9 @@ export default function DashboardPage() {
   const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [showRealModal, setShowRealModal] = useState(false);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [isArchiving, setIsArchiving] = useState(false);
+  // const [showRealModal, setShowRealModal] = useState(false);
+  // const [showConfirmModal, setShowConfirmModal] = useState(false);
+  // const [isArchiving, setIsArchiving] = useState(false);
 
   const { data: suppliers = [] } = useQuery<Supplier[]>({
     queryKey: ["/api/suppliers"],
@@ -131,6 +130,7 @@ export default function DashboardPage() {
     },
   });
 
+  /* ARCHIVE FEATURE REMOVED — archive mutation commented out
   const archiveMutation = useMutation({
     mutationFn: async (year: number) => {
       await apiRequest("POST", `/api/payments/archive/${year}`);
@@ -141,10 +141,10 @@ export default function DashboardPage() {
       setShowConfirmModal(false);
     },
   });
+  */
 
   const initialYear = user?.initialYear || 2025;
   const currentYearSuffix = selectedYear.toString().slice(-2);
-  const isRealButtonEnabled = false;
 
   const handlePrevYear = () => {
     if (selectedYear > initialYear) setSelectedYear(selectedYear - 1);
@@ -222,6 +222,7 @@ export default function DashboardPage() {
     return payments.filter(p => p.monthYear === monthYear).reduce((acc, curr) => acc + curr.amount, 0);
   };
 
+  /* ARCHIVE FEATURE REMOVED — archive handlers commented out
   const handleRealArchive = () => {
     setIsArchiving(true);
     setTimeout(() => {
@@ -234,6 +235,7 @@ export default function DashboardPage() {
   const handleConfirmArchive = () => {
     archiveMutation.mutate(selectedYear);
   };
+  */
 
   return (
     <div className="space-y-6">
@@ -252,29 +254,7 @@ export default function DashboardPage() {
             <Download className="w-4 h-4" />
             Exportar XLSX
           </Button>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span>
-                  <Button 
-                    variant="outline" 
-                    className="gap-2" 
-                    disabled={!isRealButtonEnabled}
-                    onClick={() => setShowRealModal(true)}
-                    data-testid="button-archive"
-                  >
-                    <Archive className="w-4 h-4" />
-                    Arquivar Ano [{selectedYear}]
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              {!isRealButtonEnabled && (
-                <TooltipContent>
-                  <p>Disponível apenas no fim do ano</p>
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
+          {/* ARCHIVE FEATURE REMOVED — archive button was here */}
         </div>
       </div>
 
@@ -378,12 +358,6 @@ export default function DashboardPage() {
           </DialogHeader>
           {selectedPayment && (
             <div className="space-y-4 py-4">
-              {selectedPayment.isArchived && (
-                <div className="bg-muted/50 p-3 rounded-lg flex items-center gap-2 text-muted-foreground text-sm border">
-                  <Archive className="w-4 h-4" />
-                  Arquivos arquivados. Consulte historico_{selectedYear}.zip
-                </div>
-              )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Valor:</p>
@@ -409,7 +383,7 @@ export default function DashboardPage() {
                 <Button 
                   variant="outline" 
                   className="gap-2" 
-                  disabled={selectedPayment.isArchived || !selectedPayment.fileUrl}
+                  disabled={!selectedPayment.fileUrl}
                   onClick={() => selectedPayment.fileUrl && window.open(selectedPayment.fileUrl, '_blank')}
                   data-testid="button-view-fatura"
                 >
@@ -419,7 +393,7 @@ export default function DashboardPage() {
                 <Button 
                   variant="outline" 
                   className="gap-2" 
-                  disabled={selectedPayment.isArchived || !selectedPayment.receiptUrl}
+                  disabled={!selectedPayment.receiptUrl}
                   onClick={() => selectedPayment.receiptUrl && window.open(selectedPayment.receiptUrl, '_blank')}
                   data-testid="button-view-receipt"
                 >
@@ -428,35 +402,33 @@ export default function DashboardPage() {
                 </Button>
               </div>
 
-              {!selectedPayment.isArchived && (
-                <div className="flex flex-col sm:flex-row gap-2 pt-2">
-                  <Button 
-                    variant="secondary" 
-                    className="flex-1 gap-2" 
-                    onClick={() => {
-                      setLocation(`/pagamentos/novo?paymentId=${selectedPayment.id}`);
-                      setSelectedPayment(null);
-                    }}
-                    data-testid="button-edit-payment"
-                  >
-                    <Pencil className="w-4 h-4" />
-                    Editar
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    className="flex-1 gap-2 text-destructive hover:bg-destructive/10" 
-                    onClick={() => setPaymentToDelete(selectedPayment.id)}
-                    data-testid="button-delete-payment"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Deletar Pagamento
-                  </Button>
-                </div>
-              )}
+              <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                <Button 
+                  variant="secondary" 
+                  className="flex-1 gap-2" 
+                  onClick={() => {
+                    setLocation(`/pagamentos/novo?paymentId=${selectedPayment.id}`);
+                    setSelectedPayment(null);
+                  }}
+                  data-testid="button-edit-payment"
+                >
+                  <Pencil className="w-4 h-4" />
+                  Editar
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="flex-1 gap-2 text-destructive hover:bg-destructive/10" 
+                  onClick={() => setPaymentToDelete(selectedPayment.id)}
+                  data-testid="button-delete-payment"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Deletar Pagamento
+                </Button>
+              </div>
             </div>
           )}
           <DialogFooter className="flex-col gap-2 sm:flex-col">
-            {selectedPayment && !selectedPayment.isArchived && (
+            {selectedPayment && (
               <Button
                 variant="outline"
                 className="w-full gap-2"
@@ -477,62 +449,7 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showRealModal} onOpenChange={setShowRealModal}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="font-heading">Arquivar Ano {selectedYear}?</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <p className="text-sm flex items-center gap-2">Gerar arquivo <span className="font-mono">historico_{selectedYear}.zip</span> contendo:</p>
-              <ul className="text-xs text-muted-foreground list-disc pl-8 space-y-1">
-                <li>Planilha Excel com todos 12 meses</li>
-                <li>Todas faturas (PDFs/JPGs)</li>
-                <li>Todos comprovantes (JPGs)</li>
-              </ul>
-            </div>
-            <div className="bg-rose-50 border border-rose-200 p-4 rounded-lg">
-              <p className="text-sm text-rose-800">
-                <span className="font-bold">Atenção:</span> Após download e confirmação, os arquivos serão <span className="font-bold">REMOVIDOS</span> do sistema (Dados dos pagamentos continuam visíveis, mas sem arquivos anexados).
-              </p>
-            </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setShowRealModal(false)}>Cancelar</Button>
-            <Button disabled={isArchiving} onClick={handleRealArchive}>
-              {isArchiving ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Gerando...
-                </>
-              ) : "Gerar e Baixar Arquivo"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="font-heading">Arquivo gerado com sucesso!</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <p className="text-sm font-medium">Download iniciado (verificar pasta Downloads)</p>
-            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg space-y-2 text-blue-800">
-              <p className="text-xs font-bold uppercase tracking-wider">IMPORTANTE:</p>
-              <p className="text-sm">Salve este arquivo em local seguro (nuvem pessoal, HD externo, etc)</p>
-              <p className="text-xs">O arquivo <span className="font-mono font-bold">historico_{selectedYear}.zip</span> contém TUDO do ano {selectedYear}.</p>
-            </div>
-            <Button variant="link" className="px-0 h-auto text-xs" onClick={handleRealArchive}>
-              Download não iniciou? Clique aqui para baixar novamente
-            </Button>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setShowConfirmModal(false)}>Cancelar</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleConfirmArchive}>Confirmar: Baixei o Arquivo</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* ARCHIVE FEATURE REMOVED — archive dialogs were here */}
 
       <AlertDialog open={!!paymentToDelete} onOpenChange={(val) => !val && setPaymentToDelete(null)}>
         <AlertDialogContent>

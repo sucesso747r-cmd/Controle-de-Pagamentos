@@ -45,10 +45,11 @@ interface AppState {
   addSupplier: (supplier: Omit<Supplier, 'id' | 'ownerId'>) => void;
   updateSupplier: (id: string, supplier: Partial<Omit<Supplier, 'id' | 'ownerId'>>) => void;
   deleteSupplier: (id: string) => void;
-  addPayment: (payment: Omit<Payment, 'id' | 'registrationDate' | 'isArchived'>) => void;
+  addPayment: (payment: Omit<Payment, 'id' | 'registrationDate'>) => void;
   updatePayment: (id: string, payment: Partial<Payment>) => void;
   deletePayment: (id: string) => void;
-  archiveYear: (year: number) => void;
+  // ARCHIVE FEATURE REMOVED
+  // archiveYear: (year: number) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -93,7 +94,6 @@ export const useStore = create<AppState>((set) => ({
       ...newPayment,
       id: Math.random().toString(36).substr(2, 9),
       registrationDate: new Date().toISOString(),
-      isArchived: false,
     }]
   })),
   updatePayment: (id, updatedFields) => set((state) => ({
@@ -102,6 +102,7 @@ export const useStore = create<AppState>((set) => ({
   deletePayment: (id) => set((state) => ({
     payments: state.payments.filter(p => p.id !== id)
   })),
+  /* ARCHIVE FEATURE REMOVED
   archiveYear: (year) => set((state) => ({
     payments: state.payments.map(p => 
       p.monthYear.endsWith(year.toString().slice(-2)) 
@@ -109,4 +110,5 @@ export const useStore = create<AppState>((set) => ({
         : p
     )
   })),
+  */
 }));

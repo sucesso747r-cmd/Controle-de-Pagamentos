@@ -57,9 +57,11 @@ export default function SettingsPage() {
     });
   };
 
+  /* ARCHIVE FEATURE REMOVED
   const handleTestArchive = () => {
     toast({ title: "ZIP de teste gerado!", description: "Arquivos mantidos no sistema." });
   };
+  */
 
   const handleSendTestEmail = () => {
     setIsSending(true);

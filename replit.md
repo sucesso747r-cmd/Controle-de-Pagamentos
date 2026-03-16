@@ -4,6 +4,7 @@
 Full-stack web application for supplier payment tracking with Replit Auth. All UI in Portuguese (PT-BR) with minimalist, mobile-optimized design.
 
 ## Recent Changes
+- 2026-03-16: Removed archive year feature — commented out archive button, dialogs, mutation, handlers, backend route, storage method; isArchived column remains in DB but unused
 - 2026-03-16: Simplified landing page — removed feature cards, preview panel, Google branding; single centered layout with "Iniciar" button
 - 2026-03-16: Commented out Gmail OAuth backend routes (/api/gmail/auth, /api/gmail/callback, /api/gmail/disconnect) and getGmailOAuthClient function
 - 2026-03-16: Commented out Gmail sending branch in send-receipt endpoint; only Resend is active
@@ -55,8 +56,10 @@ Full-stack web application for supplier payment tracking with Replit Auth. All U
 - PATCH /api/settings - Update user preferences
 - GET/POST/PATCH/DELETE /api/suppliers - Supplier CRUD
 - GET/POST/PATCH/DELETE /api/payments - Payment CRUD with file upload
-- POST /api/payments/archive/:year - Archive year's files
 - POST /api/payments/:id/send-receipt - Send payment receipt email via Resend API
+
+### API Endpoints (Archive — commented out)
+- POST /api/payments/archive/:year - (commented out) Archive year's files
 
 ### API Endpoints (Gmail OAuth — commented out)
 - GET /api/gmail/auth - (commented out) Get Gmail OAuth authorization URL

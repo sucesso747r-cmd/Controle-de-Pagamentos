@@ -346,12 +346,14 @@ export async function registerRoutes(
     res.json({ ok: true });
   });
 
+  /* ARCHIVE FEATURE REMOVED
   app.post("/api/payments/archive/:year", isAuthenticated, async (req, res) => {
     const userId = getUserId(req);
     const yearSuffix = (req.params.year as string).slice(-2);
     await storage.archiveYear(userId, yearSuffix);
     res.json({ ok: true });
   });
+  */
 
   app.post("/api/payments/:id/send-receipt", isAuthenticated, async (req, res) => {
     try {
