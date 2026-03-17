@@ -45,7 +45,7 @@ async function saveUploadedFile(file: Express.Multer.File, ownerId: string): Pro
 }
 
 function getUserId(req: Request): string {
-  return (req.user as any)?.claims?.sub;
+  return (req.user as any)?.id;
 }
 
 const DEFAULT_SERVICES = [
