@@ -1,32 +1,37 @@
+name: i9star-dev
+
 services:
   app:
     build: .
     container_name: i9star_app_dev
-    environment:
-      NODE_ENV: development
-      PORT: 3000
-      DATABASE_URL: postgres://i9star_dev_user:i9star_dev_pwd@postgres:5432/i9star_dev_db
-      APP_SECRET: dev_change_this_secret
+    restart: unless-stopped
+    env_file:
+      - .env.dev
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     ports:
       - "3000:3000"
     volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
-    command: npm run dev
+      - uploads_dev:/usr/src/app/uploads
 
   postgres:
     image: postgres:16-alpine
     container_name: i9star_postgres_dev
-    environment:
-      POSTGRES_USER: i9star_dev_user
-      POSTGRES_PASSWORD: i9star_dev_pwd
-      POSTGRES_DB: i9star_dev_db
+    restart: unless-stopped
+    env_file:
+      - .env.dev
     volumes:
       - pgdata_dev:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   pgdata_dev:
+  uploads_dev:
