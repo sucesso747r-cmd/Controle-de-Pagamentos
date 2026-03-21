@@ -197,8 +197,12 @@ export default function PaymentPage() {
   };
 
   const formatCurrency = (value: string) => {
-    const numeric = value.replace(/\D/g, "");
-    return (Number(numeric) / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    const stripped = value.replace(/[^\d,]/g, "");
+    if (!stripped) return "";
+    const normalized = stripped.replace(",", ".");
+    const num = parseFloat(normalized);
+    if (isNaN(num)) return "";
+    return num.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   };
 
   return (
@@ -223,7 +227,13 @@ export default function PaymentPage() {
       <Card className="border-none shadow-xl bg-card/50 backdrop-blur-sm">
         <CardContent className="pt-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
+              const step1Fields: (keyof PaymentFormValues)[] = ["supplierId", "amount", "monthYear", "dueDay", "pixKey"];
+              if (step === 2 && step1Fields.some(f => errors[f])) {
+                setStep(1);
+                toast({ variant: "destructive", title: "Corrija os campos obrigatórios na etapa 1 antes de continuar." });
+              }
+            })} className="space-y-6">
               {step === 1 ? (
                 <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                   <FormField control={form.control} name="supplierId" render={({ field }) => (
@@ -253,7 +263,10 @@ export default function PaymentPage() {
                       <FormItem>
                         <FormLabel>Valor pago <span className="text-destructive">*</span></FormLabel>
                         <FormControl>
-                          <Input className="h-12" placeholder="R$ 0,00" {...field} onChange={(e) => field.onChange(formatCurrency(e.target.value))} data-testid="input-amount" />
+                          <Input className="h-12" placeholder="R$ 0,00" {...field}
+                            onChange={(e) => field.onChange(e.target.value)}
+                            onBlur={(e) => { field.onChange(formatCurrency(e.target.value)); field.onBlur(); }}
+                            data-testid="input-amount" />
                         </FormControl>
                         <FormMessage className="text-destructive font-medium" />
                       </FormItem>
