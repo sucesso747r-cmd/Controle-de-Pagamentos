@@ -246,15 +246,22 @@ export default function SettingsPage() {
                   <SelectValue placeholder="Selecione o ano" />
                 </SelectTrigger>
                 <SelectContent>
-                  {[0, 1, 2].map((offset) => {
-                    const year = new Date().getFullYear() - offset;
-                    const suffix = year.toString().slice(-2);
-                    return (
-                      <SelectItem key={suffix} value={suffix}>
-                        {year}
-                      </SelectItem>
-                    );
-                  })}
+                  {(() => {
+                    const currentYear = new Date().getFullYear();
+                    const minYear = user?.initialYear || currentYear;
+                    const years = [];
+                    for (let y = currentYear; y >= minYear; y--) {
+                      years.push(y);
+                    }
+                    return years.map((year) => {
+                      const suffix = year.toString().slice(-2);
+                      return (
+                        <SelectItem key={suffix} value={suffix}>
+                          {year}
+                        </SelectItem>
+                      );
+                    });
+                  })()}
                 </SelectContent>
               </Select>
             </div>
