@@ -5,10 +5,20 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { FlaskConical, Mail, Loader2, CheckCircle, ShieldCheck, MailCheck, BarChart3, Key } from "lucide-react";
-import { 
+import { FlaskConical, Mail, Loader2, CheckCircle, ShieldCheck, MailCheck, BarChart3, Key, Archive } from "lucide-react";
+import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -29,6 +39,12 @@ export default function SettingsPage() {
   const [copyEmail, setCopyEmail] = useState(user?.copyEmail || "");
   const [initialYear, setInitialYearLocal] = useState((user?.initialYear || 2025).toString());
   const [resendApiKey, setResendApiKey] = useState("");
+
+  const currentYearSuffix = new Date().getFullYear().toString().slice(-2);
+  const [maintenanceYear, setMaintenanceYear] = useState(currentYearSuffix);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadConfirmed, setDownloadConfirmed] = useState(false);
+  const [showCleanupDialog, setShowCleanupDialog] = useState(false);
   const [emailProvider, setEmailProvider] = useState(user?.emailProvider || "resend");
 
   const updateSettingsMutation = useMutation({
@@ -209,6 +225,80 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl font-heading flex items-center gap-2">
+              <Archive className="w-5 h-5 text-violet-500" />Manutenção
+            </CardTitle>
+            <CardDescription>Backup e limpeza de arquivos por ano.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label>Ano</Label>
+              <Select
+                value={maintenanceYear}
+                onValueChange={(val) => {
+                  setMaintenanceYear(val);
+                  setDownloadConfirmed(false);
+                }}
+              >
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <SelectValue placeholder="Selecione o ano" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[0, 1, 2].map((offset) => {
+                    const year = new Date().getFullYear() - offset;
+                    const suffix = year.toString().slice(-2);
+                    return (
+                      <SelectItem key={suffix} value={suffix}>
+                        {year}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                variant="outline"
+                className="gap-2"
+                disabled={isDownloading}
+                onClick={async () => {
+                  setIsDownloading(true);
+                  try {
+                    const res = await fetch(`/api/backup/${maintenanceYear}`, { credentials: "include" });
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `backup_20${maintenanceYear}.zip`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    setDownloadConfirmed(true);
+                  } catch {
+                    toast({ variant: "destructive", title: "Erro ao gerar backup." });
+                  } finally {
+                    setIsDownloading(false);
+                  }
+                }}
+              >
+                {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Archive className="w-4 h-4" />}
+                {isDownloading ? "Gerando..." : "Baixar Backup ZIP"}
+              </Button>
+
+              <Button
+                variant="destructive"
+                className="gap-2"
+                disabled={!downloadConfirmed}
+                onClick={() => setShowCleanupDialog(true)}
+              >
+                Limpar Arquivos do Ano
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Testes section - hidden for now
         <Card>
           <CardHeader>
@@ -253,6 +343,39 @@ export default function SettingsPage() {
         </Card>
         */}
       </div>
+
+      <AlertDialog open={showCleanupDialog} onOpenChange={setShowCleanupDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar limpeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Isso irá deletar os arquivos de fatura e comprovante do ano selecionado. Os registros de pagamento serão preservados. Essa ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                try {
+                  const res = await fetch(`/api/cleanup/${maintenanceYear}`, {
+                    method: "DELETE",
+                    credentials: "include",
+                  });
+                  const data = await res.json();
+                  toast({ title: data.message || "Limpeza concluída." });
+                  setDownloadConfirmed(false);
+                } catch {
+                  toast({ variant: "destructive", title: "Erro ao executar limpeza." });
+                }
+                setShowCleanupDialog(false);
+              }}
+            >
+              Confirmar limpeza
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={showEmailModal} onOpenChange={setShowEmailModal}>
         <DialogContent className="sm:max-w-[425px]">

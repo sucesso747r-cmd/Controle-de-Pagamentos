@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertSupplierSchema, insertServiceSchema, updateSettingsSchema } from "@shared/schema";
+import { insertSupplierSchema, insertServiceSchema, updateSettingsSchema, payments, files } from "@shared/schema";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./auth";
 import multer from "multer";
 import path from "path";
@@ -9,6 +9,9 @@ import fs from "fs";
 import { randomUUID } from "crypto";
 import { Resend } from "resend";
 import XLSX from "xlsx";
+import archiver from "archiver";
+import { db } from "./db";
+import { eq, sql, like } from "drizzle-orm";
 // Gmail OAuth imports — commented out along with Gmail OAuth code
 // import { google } from "googleapis";
 // import { OAuth2Client } from "google-auth-library";
@@ -522,6 +525,8 @@ export async function registerRoutes(
           }
           return res.status(500).json({ message: "Erro ao enviar email. Tente novamente." });
         }
+
+        await db.update(payments).set({ emailSentAt: new Date() }).where(eq(payments.id, paymentId));
       }
 
       res.json({ ok: true });
@@ -579,6 +584,124 @@ export async function registerRoutes(
     } catch (err: any) {
       console.error("Export error:", err);
       res.status(500).json({ message: "Erro ao exportar planilha." });
+    }
+  });
+
+  app.get("/api/stats/usage", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+
+      const dbSizeResult = await db.execute(
+        sql`SELECT pg_database_size(current_database()) AS size`
+      );
+      const dbSizeBytes = Number(dbSizeResult.rows[0].size);
+
+      const filesSizeResult = await db.execute(
+        sql`SELECT pg_total_relation_size('files') AS size`
+      );
+      const filesSizeBytes = Number(filesSizeResult.rows[0].size);
+
+      const now = new Date();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const emailCountResult = await db.execute(
+        sql`SELECT COUNT(*) AS count FROM payments WHERE owner_id = ${userId} AND email_sent_at >= ${firstDayOfMonth}`
+      );
+      const emailCount = Number(emailCountResult.rows[0].count);
+
+      res.json({
+        db: { bytes: dbSizeBytes, limitBytes: 1 * 1024 * 1024 * 1024 },
+        files: { bytes: filesSizeBytes, limitBytes: 800 * 1024 * 1024 },
+        emails: { count: emailCount, limitCount: 3000 },
+      });
+    } catch (err) {
+      console.error("GET /api/stats/usage error:", err);
+      res.status(500).json({ error: "Falha ao obter estatísticas de uso" });
+    }
+  });
+
+  app.get("/api/backup/:year", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const year = req.params.year as string;
+
+      const yearPayments = await storage.getPaymentsByYear(userId, year);
+
+      res.setHeader("Content-Type", "application/zip");
+      res.setHeader("Content-Disposition", `attachment; filename="backup_20${year}.zip"`);
+
+      const archive = archiver("zip", { zlib: { level: 9 } });
+      archive.pipe(res);
+
+      const wsData = yearPayments.map((p) => ({
+        Fornecedor: p.supplierId,
+        "Mês/Ano": p.monthYear ?? "",
+        Valor: p.amount ?? "",
+        Status: p.status ?? "",
+        "Email Enviado": p.emailSentAt ? p.emailSentAt.toISOString() : "",
+      }));
+      const ws = XLSX.utils.json_to_sheet(wsData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Pagamentos");
+      const xlsxBuffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+      archive.append(xlsxBuffer, { name: `dashboard_20${year}.xlsx` });
+
+      for (const payment of yearPayments) {
+        const supplierSlug = payment.supplierId.toLowerCase().replace(/\s+/g, "_");
+        const monthYear = payment.monthYear ?? "desconhecido";
+
+        if (payment.fileUrl) {
+          const fileUuid = payment.fileUrl.split("/").pop();
+          if (fileUuid) {
+            const fileRow = await db.select().from(files).where(eq(files.id, fileUuid));
+            if (fileRow.length > 0 && fileRow[0].data) {
+              const ext = (fileRow[0].mimeType ?? "bin").split("/").pop();
+              archive.append(Buffer.from(fileRow[0].data, "base64"), { name: `fatura_${supplierSlug}_${monthYear}.${ext}` });
+            }
+          }
+        }
+
+        if (payment.receiptUrl) {
+          const receiptUuid = payment.receiptUrl.split("/").pop();
+          if (receiptUuid) {
+            const receiptRow = await db.select().from(files).where(eq(files.id, receiptUuid));
+            if (receiptRow.length > 0 && receiptRow[0].data) {
+              const ext = (receiptRow[0].mimeType ?? "bin").split("/").pop();
+              archive.append(Buffer.from(receiptRow[0].data, "base64"), { name: `comprovante_${supplierSlug}_${monthYear}.${ext}` });
+            }
+          }
+        }
+      }
+
+      archive.finalize();
+    } catch (err) {
+      console.error("GET /api/backup/:year error:", err);
+      if (!res.headersSent) res.status(500).json({ error: "Falha ao gerar backup" });
+    }
+  });
+
+  app.delete("/api/cleanup/:year", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const year = req.params.year as string;
+
+      const yearPayments = await storage.getPaymentsByYear(userId, year);
+
+      let deletedCount = 0;
+      for (const payment of yearPayments) {
+        const uuids: string[] = [];
+        if (payment.fileUrl) uuids.push(payment.fileUrl.split("/").pop()!);
+        if (payment.receiptUrl) uuids.push(payment.receiptUrl.split("/").pop()!);
+
+        for (const uuid of uuids.filter(Boolean)) {
+          await db.delete(files).where(eq(files.id, uuid));
+          deletedCount++;
+        }
+      }
+
+      res.json({ deleted: deletedCount, message: `${deletedCount} arquivo(s) removido(s). Registros de pagamento preservados.` });
+    } catch (err) {
+      console.error("DELETE /api/cleanup/:year error:", err);
+      res.status(500).json({ error: "Falha ao executar cleanup" });
     }
   });
 

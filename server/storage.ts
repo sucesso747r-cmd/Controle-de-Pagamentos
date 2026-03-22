@@ -1,4 +1,4 @@
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, like } from "drizzle-orm";
 import { db } from "./db";
 import {
   users, suppliers, payments, services, files,
@@ -59,6 +59,8 @@ export interface IStorage {
   deletePayment(id: string, ownerId: string): Promise<void>;
   // ARCHIVE FEATURE REMOVED
   // archiveYear(ownerId: string, yearSuffix: string): Promise<void>;
+
+  getPaymentsByYear(ownerId: string, year: string): Promise<Payment[]>;
 
   saveFile(filename: string, mimeType: string, data: string, ownerId: string): Promise<DbFile>;
   getFile(id: string): Promise<DbFile | undefined>;
@@ -158,6 +160,11 @@ export class DatabaseStorage implements IStorage {
 
   async deletePayment(id: string, ownerId: string): Promise<void> {
     await db.delete(payments).where(and(eq(payments.id, id), eq(payments.ownerId, ownerId)));
+  }
+
+  async getPaymentsByYear(ownerId: string, year: string): Promise<Payment[]> {
+    return db.select().from(payments)
+      .where(and(eq(payments.ownerId, ownerId), like(payments.monthYear, `%${year}`)));
   }
 
   /* ARCHIVE FEATURE REMOVED
