@@ -611,7 +611,7 @@ export async function registerRoutes(
       res.json({
         db: { bytes: dbSizeBytes, limitBytes: 1 * 1024 * 1024 * 1024 },
         files: { bytes: filesSizeBytes, limitBytes: 800 * 1024 * 1024 },
-        emails: { count: emailCount, limitCount: 3000 },
+        emails: { count: emailCount, limitCount: 5 },
       });
     } catch (err) {
       console.error("GET /api/stats/usage error:", err);
