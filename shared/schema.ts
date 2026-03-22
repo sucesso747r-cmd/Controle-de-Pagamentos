@@ -51,6 +51,15 @@ export const files = pgTable("files", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const emailLogs = pgTable("email_logs", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id),
+  paymentId: varchar("payment_id", { length: 36 }).references(() => payments.id),
+  sentAt: timestamp("sent_at").notNull().defaultNow(),
+});
+
+export type EmailLog = typeof emailLogs.$inferSelect;
+
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, ownerId: true });
 export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true, ownerId: true, registrationDate: true, isArchived: true });
 

@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertSupplierSchema, insertServiceSchema, updateSettingsSchema, payments, files } from "@shared/schema";
+import { insertSupplierSchema, insertServiceSchema, updateSettingsSchema, payments, files, emailLogs } from "@shared/schema";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./auth";
 import multer from "multer";
 import path from "path";
@@ -527,6 +527,7 @@ export async function registerRoutes(
         }
 
         await db.update(payments).set({ emailSentAt: new Date() }).where(eq(payments.id, paymentId));
+        await db.insert(emailLogs).values({ userId, paymentId });
       }
 
       res.json({ ok: true });
@@ -604,7 +605,7 @@ export async function registerRoutes(
       const now = new Date();
       const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const emailCountResult = await db.execute(
-        sql`SELECT COUNT(*) AS count FROM payments WHERE owner_id = ${userId} AND email_sent_at >= ${firstDayOfMonth}`
+        sql`SELECT COUNT(*) AS count FROM email_logs WHERE sent_at >= ${firstDayOfMonth}`
       );
       const emailCount = Number(emailCountResult.rows[0].count);
 
