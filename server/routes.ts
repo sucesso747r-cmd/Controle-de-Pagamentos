@@ -499,7 +499,7 @@ export async function registerRoutes(
         }
 
         const resend = new Resend(apiKey);
-        const fromEmail = user.email ? `${user.firstName || "Pagamentos"} <onboarding@resend.dev>` : "Pagamentos <onboarding@resend.dev>";
+        const fromEmail = `${user.firstName || "Pagamentos"} <noreply@meuspagamentos.i9star.com.br>`;
 
         const { error } = await resend.emails.send({
           from: fromEmail,
