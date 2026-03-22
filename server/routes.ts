@@ -624,8 +624,13 @@ export async function registerRoutes(
     try {
       const userId = getUserId(req);
       const year = req.params.year as string;
+      const yearSuffix = year.slice(-2);
 
       const yearPayments = await storage.getPaymentsByYear(userId, year);
+      const userSuppliers = await storage.getSuppliers(userId);
+
+      // Mapa supplierId → supplier para lookup rápido
+      const supplierMap = new Map(userSuppliers.map((s) => [s.id, s]));
 
       res.setHeader("Content-Type", "application/zip");
       res.setHeader("Content-Disposition", `attachment; filename="backup_20${year}.zip"`);
@@ -633,21 +638,48 @@ export async function registerRoutes(
       const archive = archiver("zip", { zlib: { level: 9 } });
       archive.pipe(res);
 
-      const wsData = yearPayments.map((p) => ({
-        Fornecedor: p.supplierId,
-        "Mês/Ano": p.monthYear ?? "",
-        Valor: p.amount ?? "",
-        Status: p.status ?? "",
-        "Email Enviado": p.emailSentAt ? p.emailSentAt.toISOString() : "",
-      }));
-      const ws = XLSX.utils.json_to_sheet(wsData);
+      // BUG 2 fix: XLSX com layout pivô idêntico ao GET /api/payments/export/:year
+      const months = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+
+      const rows = userSuppliers.map((supplier) => {
+        const row: Record<string, string | number> = {
+          Fornecedor: supplier.name,
+          "Serviço": supplier.serviceName,
+        };
+        months.forEach((m) => {
+          const monthYear = `${m}${yearSuffix}`;
+          const payment = yearPayments.find(
+            (p) => p.supplierId === supplier.id && p.monthYear === monthYear
+          );
+          row[`${m}${yearSuffix}`] = payment ? payment.amount : "";
+        });
+        return row;
+      });
+
+      const totalRow: Record<string, string | number> = { Fornecedor: "TOTAL", "Serviço": "" };
+      months.forEach((m) => {
+        const monthYear = `${m}${yearSuffix}`;
+        const total = yearPayments
+          .filter((p) => p.monthYear === monthYear)
+          .reduce((acc, p) => acc + p.amount, 0);
+        totalRow[`${m}${yearSuffix}`] = total || "";
+      });
+      rows.push(totalRow);
+
+      const ws = XLSX.utils.json_to_sheet(rows);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Pagamentos");
+      XLSX.utils.book_append_sheet(wb, ws, `Pagamentos 20${year}`);
       const xlsxBuffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
       archive.append(xlsxBuffer, { name: `dashboard_20${year}.xlsx` });
 
       for (const payment of yearPayments) {
-        const supplierSlug = payment.supplierId.toLowerCase().replace(/\s+/g, "_");
+        // BUG 1 fix: usar nome real do fornecedor no slug, não o UUID
+        const supplier = supplierMap.get(payment.supplierId);
+        const supplierSlug = (supplier?.name ?? payment.supplierId)
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase()
+          .replace(/\s+/g, "_");
         const monthYear = payment.monthYear ?? "desconhecido";
 
         if (payment.fileUrl) {
