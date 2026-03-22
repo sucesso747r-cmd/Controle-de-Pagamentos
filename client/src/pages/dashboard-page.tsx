@@ -123,7 +123,7 @@ export default function DashboardPage() {
       return res.json();
     },
     onSuccess: () => {
-      toast({ title: "Comprovante enviado com sucesso", description: "O email foi enviado para os destinatários configurados." });
+      toast({ title: "Comprovante enviado com sucesso", description: `Email enviado para: ${user?.destEmail}` });
     },
     onError: (err: Error) => {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
