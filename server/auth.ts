@@ -153,7 +153,18 @@ export function registerAuthRoutes(app: Express) {
         used: false,
       });
 
-      const resend = new Resend(process.env.RESEND_API_KEY);
+      // Resolve API key: prefer user's own key (decrypted), fall back to env var
+      let apiKey = process.env.RESEND_API_KEY;
+      if (user.resendApiKey) {
+        try {
+          apiKey = isEncrypted(user.resendApiKey) ? decrypt(user.resendApiKey) : user.resendApiKey;
+        } catch {
+          // keep env var fallback
+        }
+      }
+      if (!apiKey) throw new Error("RESEND_API_KEY não configurada.");
+
+      const resend = new Resend(apiKey);
       const resetLink = `https://meuspagamentos.i9star.com.br/reset-password?token=${tokenPlain}`;
 
       await resend.emails.send({
