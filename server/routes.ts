@@ -485,7 +485,7 @@ export async function registerRoutes(
       //     return res.status(500).json({ message: "Erro ao enviar email via Gmail. Tente novamente." });
       //   }
       // } else
-      if (provider === "resend") {
+      {
         const apiKey = process.env.RESEND_API_KEY;
         if (!apiKey) {
           return res.status(500).json({ message: "Serviço de email não configurado. Contate o administrador." });
