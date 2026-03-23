@@ -6,6 +6,23 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { users } from "./models/auth";
 
+export const passwordSchema = z.string()
+  .min(8, "A senha deve ter pelo menos 8 caracteres")
+  .regex(/[A-Z]/, "A senha deve ter pelo menos 1 letra maiúscula")
+  .regex(/[a-z]/, "A senha deve ter pelo menos 1 letra minúscula")
+  .regex(/[0-9]/, "A senha deve ter pelo menos 1 número")
+  .regex(/[!@#$%^&*]/, "A senha deve ter pelo menos 1 caractere especial (!@#$%^&*)");
+
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  tokenHash: text("token_hash").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").notNull().default(false),
+});
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+
 export const services = pgTable("services", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull().unique(),

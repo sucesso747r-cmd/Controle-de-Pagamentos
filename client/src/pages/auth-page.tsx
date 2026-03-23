@@ -118,6 +118,15 @@ export default function AuthPage() {
                   <Button type="submit" className="w-full h-11" disabled={loginMutation.isPending}>
                     {loginMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Entrar"}
                   </Button>
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => setLocation("/forgot-password")}
+                      className="text-sm text-muted-foreground hover:text-primary underline-offset-4 hover:underline"
+                    >
+                      Esqueceu a senha?
+                    </button>
+                  </div>
                 </form>
               </Form>
             </TabsContent>
