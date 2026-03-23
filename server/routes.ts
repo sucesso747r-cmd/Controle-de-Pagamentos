@@ -496,9 +496,9 @@ export async function registerRoutes(
       //   }
       // } else
       if (provider === "resend") {
-        const apiKey = user.resendApiKey || process.env.RESEND_API_KEY;
+        const apiKey = process.env.RESEND_API_KEY;
         if (!apiKey) {
-          return res.status(400).json({ message: "Chave da API Resend não configurada. Adicione nas Configurações." });
+          return res.status(500).json({ message: "Serviço de email não configurado. Contate o administrador." });
         }
 
         const resend = new Resend(apiKey);
