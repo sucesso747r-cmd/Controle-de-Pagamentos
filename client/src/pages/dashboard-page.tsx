@@ -49,19 +49,6 @@ import {
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
-interface UsageStatsData {
-  db: { bytes: number; limitBytes: number };
-  files: { bytes: number; limitBytes: number };
-  emails: { count: number; limitCount: number };
-}
-
-const formatBytes = (bytes: number) =>
-  bytes < 1024 * 1024 * 1024
-    ? (bytes / (1024 * 1024)).toFixed(1) + " MB"
-    : (bytes / (1024 * 1024 * 1024)).toFixed(2) + " GB";
-
-const getBarColor = (pct: number) =>
-  pct < 60 ? "bg-green-500" : pct < 85 ? "bg-yellow-500" : "bg-red-500";
 import SupplierEditModal from "@/components/supplier-edit-modal";
 
 interface Supplier {
@@ -106,10 +93,6 @@ export default function DashboardPage() {
   // const [showRealModal, setShowRealModal] = useState(false);
   // const [showConfirmModal, setShowConfirmModal] = useState(false);
   // const [isArchiving, setIsArchiving] = useState(false);
-
-  const { data: usageStats } = useQuery<UsageStatsData>({
-    queryKey: ["/api/stats/usage"],
-  });
 
   const { data: suppliers = [] } = useQuery<Supplier[]>({
     queryKey: ["/api/suppliers"],
@@ -497,43 +480,6 @@ export default function DashboardPage() {
         />
       )}
 
-      {usageStats && (
-        <Card className="border-none shadow-xl bg-card/50 backdrop-blur-sm">
-          <CardContent className="p-6 space-y-5">
-            <h3 className="text-lg font-bold font-heading">Uso do Sistema</h3>
-            {[
-              {
-                label: "Banco de Dados",
-                value: `${formatBytes(usageStats.db.bytes)} / 1 GB`,
-                pct: Math.min(100, (usageStats.db.bytes / usageStats.db.limitBytes) * 100),
-              },
-              {
-                label: "Arquivos",
-                value: `${formatBytes(usageStats.files.bytes)} / 800 MB`,
-                pct: Math.min(100, (usageStats.files.bytes / usageStats.files.limitBytes) * 100),
-              },
-              {
-                label: "Emails (mês)",
-                value: `${usageStats.emails.count.toLocaleString("pt-BR")} / 3.000`,
-                pct: Math.min(100, (usageStats.emails.count / usageStats.emails.limitCount) * 100),
-              },
-            ].map(({ label, value, pct }) => (
-              <div key={label} className="space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{label}</span>
-                  <span className="font-medium">{value}</span>
-                </div>
-                <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${getBarColor(pct)}`}
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

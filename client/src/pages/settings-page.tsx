@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { FlaskConical, Mail, Loader2, CheckCircle, ShieldCheck, MailCheck, BarChart3, Key, Archive } from "lucide-react";
+import { FlaskConical, Mail, Loader2, CheckCircle, ShieldCheck, MailCheck, BarChart3, Key, Archive, Database } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -22,8 +22,22 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+
+interface UsageStatsData {
+  db: { bytes: number; limitBytes: number };
+  files: { bytes: number; limitBytes: number };
+  emails: { count: number; limitCount: number };
+}
+
+const formatBytes = (bytes: number) =>
+  bytes < 1024 * 1024 * 1024
+    ? (bytes / (1024 * 1024)).toFixed(1) + " MB"
+    : (bytes / (1024 * 1024 * 1024)).toFixed(2) + " GB";
+
+const getBarColor = (pct: number) =>
+  pct < 60 ? "bg-green-500" : pct < 85 ? "bg-yellow-500" : "bg-red-500";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -46,6 +60,10 @@ export default function SettingsPage() {
   const [downloadConfirmed, setDownloadConfirmed] = useState(false);
   const [showCleanupDialog, setShowCleanupDialog] = useState(false);
   const [emailProvider, setEmailProvider] = useState(user?.emailProvider || "resend");
+
+  const { data: usageStats } = useQuery<UsageStatsData>({
+    queryKey: ["/api/stats/usage"],
+  });
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -224,6 +242,49 @@ export default function SettingsPage() {
             <Button onClick={handleSaveDataConfig} className="w-full sm:w-auto" data-testid="button-save-data">Salvar</Button>
           </CardContent>
         </Card>
+
+        {usageStats && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl font-heading flex items-center gap-2">
+                <Database className="w-5 h-5 text-sky-500" />Uso do Sistema
+              </CardTitle>
+              <CardDescription>Consumo atual dos recursos da plataforma.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {[
+                {
+                  label: "Banco de Dados",
+                  value: `${formatBytes(usageStats.db.bytes)} / 1 GB`,
+                  pct: Math.min(100, (usageStats.db.bytes / usageStats.db.limitBytes) * 100),
+                },
+                {
+                  label: "Arquivos",
+                  value: `${formatBytes(usageStats.files.bytes)} / 800 MB`,
+                  pct: Math.min(100, (usageStats.files.bytes / usageStats.files.limitBytes) * 100),
+                },
+                {
+                  label: "Emails (mês)",
+                  value: `${usageStats.emails.count.toLocaleString("pt-BR")} / 3.000`,
+                  pct: Math.min(100, (usageStats.emails.count / usageStats.emails.limitCount) * 100),
+                },
+              ].map(({ label, value, pct }) => (
+                <div key={label} className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{label}</span>
+                    <span className="font-medium">{value}</span>
+                  </div>
+                  <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${getBarColor(pct)}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
