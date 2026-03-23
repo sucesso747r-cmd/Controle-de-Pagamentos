@@ -425,16 +425,6 @@ export async function registerRoutes(
         }
       }
 
-      const provider = user.emailProvider || "none";
-
-      if (provider === "none") {
-        return res.status(400).json({ message: "Nenhum provedor de email configurado. Ative Resend nas Configurações." });
-      }
-
-      if (provider === "gmail") {
-        return res.status(400).json({ message: "Gmail não está disponível no momento. Configure Resend nas Configurações." });
-      }
-
       // Gmail sending branch commented out — app uses Resend for email.
       // if (provider === "gmail") {
       //   if (!user.gmailRefreshToken) {
