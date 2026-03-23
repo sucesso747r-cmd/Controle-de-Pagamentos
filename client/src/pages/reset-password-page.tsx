@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useLocation, useSearch } from "wouter";
-import { Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Eye, EyeOff } from "lucide-react";
 import { passwordSchema } from "@shared/schema";
 
 const resetPasswordSchema = z.object({
@@ -34,6 +34,8 @@ export default function ResetPasswordPage() {
   const token = new URLSearchParams(search).get("token") ?? "";
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const form = useForm<ResetPasswordData>({
     resolver: zodResolver(resetPasswordSchema),
@@ -105,7 +107,17 @@ export default function ResetPasswordPage() {
                   <FormItem>
                     <FormLabel>Nova senha</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Nova senha" {...field} />
+                      <div className="relative">
+                        <Input type={showNewPassword ? "text" : "password"} placeholder="Nova senha" className="pr-10" {...field} />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPassword((v) => !v)}
+                          className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+                          tabIndex={-1}
+                        >
+                          {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </FormControl>
                     <FormMessage />
                     <ul className="mt-2 space-y-1">
@@ -135,7 +147,17 @@ export default function ResetPasswordPage() {
                   <FormItem>
                     <FormLabel>Confirmar senha</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Repita a nova senha" {...field} />
+                      <div className="relative">
+                        <Input type={showConfirmPassword ? "text" : "password"} placeholder="Repita a nova senha" className="pr-10" {...field} />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword((v) => !v)}
+                          className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+                          tabIndex={-1}
+                        >
+                          {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

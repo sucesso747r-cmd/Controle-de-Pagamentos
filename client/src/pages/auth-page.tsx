@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
 import { useLocation } from "wouter";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Endereço de email inválido"),
@@ -26,6 +27,8 @@ type RegisterData = z.infer<typeof registerSchema>;
 export default function AuthPage() {
   const { loginMutation, registerMutation, user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
 
   if (user) {
     setLocation("/");
@@ -104,7 +107,17 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>Senha</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="Sua senha secreta" {...field} />
+                          <div className="relative">
+                            <Input type={showLoginPassword ? "text" : "password"} placeholder="Sua senha secreta" className="pr-10" {...field} />
+                            <button
+                              type="button"
+                              onClick={() => setShowLoginPassword((v) => !v)}
+                              className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+                              tabIndex={-1}
+                            >
+                              {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -182,7 +195,17 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>Senha</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="Pelo menos 6 caracteres" {...field} />
+                          <div className="relative">
+                            <Input type={showRegisterPassword ? "text" : "password"} placeholder="Pelo menos 6 caracteres" className="pr-10" {...field} />
+                            <button
+                              type="button"
+                              onClick={() => setShowRegisterPassword((v) => !v)}
+                              className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+                              tabIndex={-1}
+                            >
+                              {showRegisterPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
