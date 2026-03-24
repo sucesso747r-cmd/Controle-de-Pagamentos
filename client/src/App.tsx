@@ -14,6 +14,8 @@ import HelpPage from "@/pages/help-page";
 import AuthPage from "@/pages/auth-page";
 import ForgotPasswordPage from "@/pages/forgot-password-page";
 import ResetPasswordPage from "@/pages/reset-password-page";
+import AdminLoginPage from "@/pages/admin-login-page";
+import AdminPage from "@/pages/admin-page";
 import Layout from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
@@ -57,6 +59,14 @@ function Router() {
       </Route>
       <Route path="/reset-password">
         <ResetPasswordPage />
+      </Route>
+
+      <Route path="/admin/login">
+        <AdminLoginPage />
+      </Route>
+
+      <Route path="/admin">
+        <AdminPage />
       </Route>
 
       <Route path="/analytics">

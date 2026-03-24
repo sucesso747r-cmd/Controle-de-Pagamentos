@@ -6,7 +6,7 @@ import { setupAuth, registerAuthRoutes, isAuthenticated } from "./auth";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { randomUUID } from "crypto";
+import crypto from "crypto";
 import { Resend } from "resend";
 import XLSX from "xlsx";
 import archiver from "archiver";
@@ -725,6 +725,132 @@ export async function registerRoutes(
     } catch (err) {
       console.error("DELETE /api/cleanup/:year error:", err);
       res.status(500).json({ error: "Falha ao executar cleanup" });
+    }
+  });
+
+  // ── ADMIN ROUTES ────────────────────────────────────────────────────────────
+
+  function isAdminSession(req: Request, res: Response, next: NextFunction) {
+    if ((req.session as any).isAdmin !== true) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    next();
+  }
+
+  app.post("/api/admin/login", async (req, res) => {
+    try {
+      const adminPassword = process.env.ADMIN_PASSWORD || "";
+      if (!adminPassword) {
+        return res.status(500).json({ message: "ADMIN_PASSWORD not configured" });
+      }
+      const supplied = Buffer.from(
+        crypto.createHash("sha256").update(String(req.body.password || "")).digest("hex")
+      );
+      const expected = Buffer.from(
+        crypto.createHash("sha256").update(adminPassword).digest("hex")
+      );
+      if (!crypto.timingSafeEqual(supplied, expected)) {
+        return res.status(401).json({ message: "Senha incorreta" });
+      }
+      (req.session as any).isAdmin = true;
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/admin/logout", (req, res) => {
+    req.session.destroy(() => {
+      res.json({ ok: true });
+    });
+  });
+
+  app.get("/api/admin/users", isAdminSession, async (_req, res) => {
+    try {
+      const result = await db.execute(sql`
+        SELECT
+          u.id,
+          COALESCE(
+            CASE
+              WHEN u.first_name IS NOT NULL AND u.last_name IS NOT NULL
+                THEN u.first_name || ' ' || u.last_name
+              WHEN u.first_name IS NOT NULL THEN u.first_name
+              WHEN u.last_name IS NOT NULL THEN u.last_name
+              ELSE ''
+            END,
+            ''
+          ) AS name,
+          u.email,
+          u.created_at AS "createdAt",
+          COALESCE(p.payments_count, 0) AS "paymentsCount",
+          COALESCE(s.suppliers_count, 0) AS "suppliersCount",
+          COALESCE(e.emails_sent, 0) AS "emailsSent",
+          COALESCE(f.storage_count, 0) AS "totalStorageBytes"
+        FROM users u
+        LEFT JOIN (
+          SELECT owner_id, COUNT(*) AS payments_count FROM payments GROUP BY owner_id
+        ) p ON p.owner_id = u.id
+        LEFT JOIN (
+          SELECT owner_id, COUNT(*) AS suppliers_count FROM suppliers GROUP BY owner_id
+        ) s ON s.owner_id = u.id
+        LEFT JOIN (
+          SELECT user_id, COUNT(*) AS emails_sent FROM email_logs GROUP BY user_id
+        ) e ON e.user_id = u.id
+        LEFT JOIN (
+          SELECT owner_id, COUNT(*) AS storage_count FROM files GROUP BY owner_id
+        ) f ON f.owner_id = u.id
+        ORDER BY u.created_at DESC
+      `);
+      res.json(result.rows);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/admin/users/:id", isAdminSession, async (req, res) => {
+    try {
+      const userId = req.params.id as string;
+
+      // 1. Delete email_logs
+      await db.execute(sql`DELETE FROM email_logs WHERE user_id = ${userId}`);
+
+      // 2. Delete password_reset_tokens
+      await db.execute(sql`DELETE FROM password_reset_tokens WHERE user_id = ${userId}`);
+
+      // 3. Delete files associated with user's payments
+      const userPayments = await db.execute(
+        sql`SELECT file_url, receipt_url FROM payments WHERE owner_id = ${userId}`
+      );
+      for (const payment of userPayments.rows as any[]) {
+        if (payment.file_url?.startsWith("/api/files/")) {
+          const fileId = payment.file_url.replace("/api/files/", "");
+          try { await db.execute(sql`DELETE FROM files WHERE id = ${fileId}`); } catch {}
+        }
+        if (payment.receipt_url?.startsWith("/api/files/")) {
+          const fileId = payment.receipt_url.replace("/api/files/", "");
+          try { await db.execute(sql`DELETE FROM files WHERE id = ${fileId}`); } catch {}
+        }
+      }
+      // Delete any remaining files owned by this user
+      await db.execute(sql`DELETE FROM files WHERE owner_id = ${userId}`);
+
+      // 4. Delete payments
+      await db.execute(sql`DELETE FROM payments WHERE owner_id = ${userId}`);
+
+      // 5. Delete suppliers
+      await db.execute(sql`DELETE FROM suppliers WHERE owner_id = ${userId}`);
+
+      // 6. Delete sessions for this user
+      await db.execute(
+        sql`DELETE FROM sessions WHERE sess->'passport'->>'user' = ${userId}`
+      );
+
+      // 7. Delete user
+      await db.execute(sql`DELETE FROM users WHERE id = ${userId}`);
+
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
     }
   });
 
