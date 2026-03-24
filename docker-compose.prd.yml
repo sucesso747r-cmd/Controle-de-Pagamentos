@@ -1,33 +1,32 @@
-version: '3.8'
-
+name: i9star-prd
 services:
   app:
     build: .
     container_name: i9star_app_prd
-    restart: always
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-      DATABASE_URL: postgres://i9star_prd_user:i9star_prd_pwd@postgres:5432/i9star_prd_db
-      APP_SECRET: prd_change_this_secret_in_production
-    depends_on:
-      postgres:
-        condition: service_started
+    restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3001:3001"
+    env_file:
+      - .env.prd
+    depends_on:
+      - postgres
+    networks:
+      - i9star_prd_network
 
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16
     container_name: i9star_postgres_prd
-    restart: always
-    environment:
-      POSTGRES_USER: i9star_prd_user
-      POSTGRES_PASSWORD: i9star_prd_pwd
-      POSTGRES_DB: i9star_prd_db
+    restart: unless-stopped
+    env_file:
+      - .env.prd
     volumes:
-      - pgdata_prd:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      - i9star_prd_postgres_data:/var/lib/postgresql/data
+    networks:
+      - i9star_prd_network
 
 volumes:
-  pgdata_prd:
+  i9star_prd_postgres_data:
+
+networks:
+  i9star_prd_network:
+    driver: bridge
