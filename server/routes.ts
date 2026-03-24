@@ -869,8 +869,9 @@ export async function registerRoutes(
         `_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
       const filename = `backup_${timestamp}.sql`;
       const filepath = path.join(backupsDir, filename);
-      const dbUrl = process.env.DATABASE_URL!;
-      execSync(`pg_dump "${dbUrl}" -f "${filepath}"`, { stdio: "pipe" });
+      execSync("docker exec i9star_postgres_dev pg_dump -U i9star_dev_user i9star_dev_db", {
+        stdio: ["pipe", fs.openSync(filepath, "w"), "pipe"],
+      });
       res.json({ filename, createdAt: now.toISOString() });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -908,8 +909,10 @@ export async function registerRoutes(
       if (!fs.existsSync(filepath)) {
         return res.status(404).json({ message: "Backup not found" });
       }
-      const dbUrl = process.env.DATABASE_URL!;
-      execSync(`psql "${dbUrl}" -f "${filepath}"`, { stdio: "pipe" });
+      execSync("docker exec -i i9star_postgres_dev psql -U i9star_dev_user i9star_dev_db", {
+        input: fs.readFileSync(filepath),
+        stdio: ["pipe", "pipe", "pipe"],
+      });
       res.json({ ok: true });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
