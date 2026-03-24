@@ -81,7 +81,7 @@ export default function AuthPage() {
                 Login
               </TabsTrigger>
               <TabsTrigger value="register" className="flex-1 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none px-6">
-                Registro
+                Criar Usuário
               </TabsTrigger>
             </TabsList>
           </CardHeader>
