@@ -154,7 +154,8 @@ export function registerAuthRoutes(app: Express) {
       });
 
       const resend = new Resend(process.env.RESEND_API_KEY);
-      const resetLink = `https://meuspagamentos.i9star.com.br/reset-password?token=${tokenPlain}`;
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      const resetLink = `${baseUrl}/reset-password?token=${tokenPlain}`;
 
       await resend.emails.send({
         from: "noreply@meuspagamentos.i9star.com.br",
