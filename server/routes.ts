@@ -7,6 +7,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import crypto from "crypto";
+import { execSync } from "child_process";
 import { Resend } from "resend";
 import XLSX from "xlsx";
 import archiver from "archiver";
@@ -848,6 +849,67 @@ export async function registerRoutes(
       // 7. Delete user
       await db.execute(sql`DELETE FROM users WHERE id = ${userId}`);
 
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // POST /api/admin/backup
+  app.post("/api/admin/backup", isAdminSession, (req, res) => {
+    try {
+      const backupsDir = path.join("/opt/i9star-dev", "backups");
+      if (!fs.existsSync(backupsDir)) {
+        fs.mkdirSync(backupsDir, { recursive: true });
+      }
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const timestamp =
+        `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}` +
+        `_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+      const filename = `backup_${timestamp}.sql`;
+      const filepath = path.join(backupsDir, filename);
+      const dbUrl = process.env.DATABASE_URL!;
+      execSync(`pg_dump "${dbUrl}" -f "${filepath}"`, { stdio: "pipe" });
+      res.json({ filename, createdAt: now.toISOString() });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // GET /api/admin/backups
+  app.get("/api/admin/backups", isAdminSession, (req, res) => {
+    try {
+      const backupsDir = path.join("/opt/i9star-dev", "backups");
+      if (!fs.existsSync(backupsDir)) {
+        return res.json([]);
+      }
+      const files = fs.readdirSync(backupsDir)
+        .filter((f) => f.endsWith(".sql"))
+        .map((f) => {
+          const stat = fs.statSync(path.join(backupsDir, f));
+          return { filename: f, createdAt: stat.mtime.toISOString(), sizeBytes: stat.size };
+        })
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      res.json(files);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // POST /api/admin/restore
+  app.post("/api/admin/restore", isAdminSession, (req, res) => {
+    try {
+      const { filename } = req.body as { filename: string };
+      if (!filename || path.basename(filename) !== filename || !filename.endsWith(".sql")) {
+        return res.status(400).json({ message: "Invalid filename" });
+      }
+      const filepath = path.join("/opt/i9star-dev", "backups", filename);
+      if (!fs.existsSync(filepath)) {
+        return res.status(404).json({ message: "Backup not found" });
+      }
+      const dbUrl = process.env.DATABASE_URL!;
+      execSync(`psql "${dbUrl}" -f "${filepath}"`, { stdio: "pipe" });
       res.json({ ok: true });
     } catch (err: any) {
       res.status(500).json({ message: err.message });

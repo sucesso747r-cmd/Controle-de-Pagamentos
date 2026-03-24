@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -33,10 +33,22 @@ interface AdminUser {
   totalStorageBytes: number;
 }
 
+interface BackupEntry {
+  filename: string;
+  createdAt: string;
+  sizeBytes: number;
+}
+
 export default function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [, setLocation] = useLocation();
+
+  const [backups, setBackups] = useState<BackupEntry[]>([]);
+  const [backupMsg, setBackupMsg] = useState<string | null>(null);
+  const [restoreMsg, setRestoreMsg] = useState<string | null>(null);
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [restoreTarget, setRestoreTarget] = useState<string | null>(null);
 
   async function fetchUsers() {
     const res = await fetch("/api/admin/users");
@@ -49,8 +61,17 @@ export default function AdminPage() {
     setLoading(false);
   }
 
+  async function fetchBackups() {
+    const res = await fetch("/api/admin/backups");
+    if (res.ok) {
+      const data = await res.json();
+      setBackups(data);
+    }
+  }
+
   useEffect(() => {
     fetchUsers();
+    fetchBackups();
   }, []);
 
   async function handleLogout() {
@@ -61,6 +82,52 @@ export default function AdminPage() {
   async function handleDelete(id: string) {
     await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
     await fetchUsers();
+  }
+
+  async function handleBackup() {
+    setBackupLoading(true);
+    setBackupMsg(null);
+    try {
+      const res = await fetch("/api/admin/backup", { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        setBackupMsg(`Backup criado: ${data.filename}`);
+        await fetchBackups();
+      } else {
+        const err = await res.json();
+        setBackupMsg(`Erro: ${err.message}`);
+      }
+    } catch {
+      setBackupMsg("Erro ao criar backup.");
+    } finally {
+      setBackupLoading(false);
+    }
+  }
+
+  async function handleRestore(filename: string) {
+    setRestoreMsg(null);
+    try {
+      const res = await fetch("/api/admin/restore", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename }),
+      });
+      if (res.ok) {
+        setRestoreMsg("Restauração concluída. Faça login novamente.");
+        setTimeout(() => setLocation("/admin/login"), 3000);
+      } else {
+        const err = await res.json();
+        setRestoreMsg(`Erro: ${err.message}`);
+      }
+    } catch {
+      setRestoreMsg("Erro ao restaurar backup.");
+    }
+  }
+
+  function formatBytes(bytes: number) {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   if (loading) {
@@ -80,6 +147,84 @@ export default function AdminPage() {
             Logout
           </Button>
         </div>
+
+        {/* Backup & Restore */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Backup &amp; Restore</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-4">
+              <Button onClick={handleBackup} disabled={backupLoading}>
+                {backupLoading ? "Criando backup..." : "Fazer Backup"}
+              </Button>
+              {backupMsg && (
+                <span className="text-sm text-muted-foreground">{backupMsg}</span>
+              )}
+            </div>
+            {restoreMsg && (
+              <p className="text-sm font-medium text-green-600">{restoreMsg}</p>
+            )}
+            {backups.length > 0 && (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Arquivo</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Tamanho</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {backups.map((b) => (
+                    <TableRow key={b.filename}>
+                      <TableCell className="font-mono text-sm">{b.filename}</TableCell>
+                      <TableCell>
+                        {new Date(b.createdAt).toLocaleString("pt-BR")}
+                      </TableCell>
+                      <TableCell>{formatBytes(b.sizeBytes)}</TableCell>
+                      <TableCell>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => setRestoreTarget(b.filename)}
+                            >
+                              Restaurar
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirmar restauração</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação vai substituir todos os dados atuais pelo backup
+                                selecionado. Todos os usuários serão desconectados. Continuar?
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleRestore(b.filename)}
+                              >
+                                Restaurar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+            {backups.length === 0 && (
+              <p className="text-sm text-muted-foreground">Nenhum backup encontrado.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Users Table */}
         <Card>
           <CardContent className="p-0">
             <Table>
