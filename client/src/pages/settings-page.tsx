@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { FlaskConical, Mail, Loader2, ShieldCheck, MailCheck, BarChart3, Archive, Database } from "lucide-react";
 import {
@@ -43,6 +43,14 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [versionInfo, setVersionInfo] = useState<{ version: string; commit: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/version")
+      .then((r) => r.json())
+      .then((data) => setVersionInfo(data))
+      .catch(() => {});
+  }, []);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [testEmail, setTestEmail] = useState(user?.email || "");
   const [isSending, setIsSending] = useState(false);
@@ -362,6 +370,15 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
         */}
+      </div>
+
+      <div className="pt-6 pb-2 space-y-1">
+        <p className="text-xs text-muted-foreground text-center">
+          {versionInfo ? `v${versionInfo.version} (${versionInfo.commit})` : ""}
+        </p>
+        <p className="text-xs text-muted-foreground text-center">
+          © 2026 i9star.com.br — Todos os direitos reservados.
+        </p>
       </div>
 
       <AlertDialog open={showCleanupDialog} onOpenChange={setShowCleanupDialog}>
