@@ -104,6 +104,15 @@ export default function AdminPage() {
     }
   }
 
+  async function handleDeleteBackup(filename: string) {
+    try {
+      await fetch(`/api/admin/backups/${encodeURIComponent(filename)}`, { method: "DELETE" });
+      await fetchBackups();
+    } catch {
+      // ignore
+    }
+  }
+
   async function handleRestore(filename: string) {
     setRestoreMsg(null);
     try {
@@ -183,7 +192,14 @@ export default function AdminPage() {
                         {new Date(b.createdAt).toLocaleString("pt-BR")}
                       </TableCell>
                       <TableCell>{formatBytes(b.sizeBytes)}</TableCell>
-                      <TableCell>
+                      <TableCell className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteBackup(b.filename)}
+                        >
+                          Deletar
+                        </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button

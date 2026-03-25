@@ -917,5 +917,23 @@ export async function registerRoutes(
     }
   });
 
+  // DELETE /api/admin/backups/:filename
+  app.delete("/api/admin/backups/:filename", isAdminSession, (req, res) => {
+    try {
+      const { filename } = req.params;
+      if (!filename || path.basename(filename) !== filename || !filename.endsWith(".sql")) {
+        return res.status(400).json({ message: "Invalid filename" });
+      }
+      const filepath = path.join("/opt/i9star-dev", "backups", filename);
+      if (!fs.existsSync(filepath)) {
+        return res.status(404).json({ message: "Backup not found" });
+      }
+      fs.unlinkSync(filepath);
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   return httpServer;
 }
