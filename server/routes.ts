@@ -908,9 +908,14 @@ export async function registerRoutes(
       if (!fs.existsSync(filepath)) {
         return res.status(404).json({ message: "Backup not found" });
       }
-      const dbUrl = process.env.DATABASE_URL!;
-      execSync('psql "' + dbUrl + '" -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = current_database() AND pid <> pg_backend_pid()"', { stdio: 'pipe' });
-      execSync('psql "' + dbUrl + '" --single-transaction -f "' + filepath + '"', { stdio: 'pipe' });
+      const appDbUrl = process.env.DATABASE_URL!;
+      const parsedUrl = new URL(appDbUrl);
+      parsedUrl.pathname = "/postgres";
+      const sysDbUrl = parsedUrl.toString();
+      execSync('psql "' + sysDbUrl + '" -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = \'i9star_dev_db\' AND pid <> pg_backend_pid()"', { stdio: 'pipe' });
+      execSync('psql "' + sysDbUrl + '" -c "DROP DATABASE i9star_dev_db"', { stdio: 'pipe' });
+      execSync('psql "' + sysDbUrl + '" -c "CREATE DATABASE i9star_dev_db OWNER i9star_dev_user"', { stdio: 'pipe' });
+      execSync('psql "' + appDbUrl + '" -f "' + filepath + '"', { stdio: 'pipe' });
       res.json({ ok: true });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
