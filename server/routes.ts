@@ -870,7 +870,7 @@ export async function registerRoutes(
       const filename = `backup_${timestamp}.sql`;
       const filepath = path.join(backupsDir, filename);
       const dbUrl = process.env.DATABASE_URL!;
-      execSync(`pg_dump "${dbUrl}" -f "${filepath}"`, { stdio: "pipe" });
+      execSync('pg_dump --clean --if-exists "' + dbUrl + '" -f "' + filepath + '"', { stdio: 'pipe' });
       res.json({ filename, createdAt: now.toISOString() });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -909,7 +909,8 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Backup not found" });
       }
       const dbUrl = process.env.DATABASE_URL!;
-      execSync(`psql "${dbUrl}" -f "${filepath}"`, { stdio: "pipe" });
+      execSync('psql "' + dbUrl + '" -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = current_database() AND pid <> pg_backend_pid()"', { stdio: 'pipe' });
+      execSync('psql "' + dbUrl + '" --single-transaction -f "' + filepath + '"', { stdio: 'pipe' });
       res.json({ ok: true });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
