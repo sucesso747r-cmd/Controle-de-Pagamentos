@@ -2,7 +2,10 @@ name: i9star-dev
 
 services:
   app:
-    build: .
+    build:
+      context: .
+      args:
+        GIT_COMMIT: 9835fe8
     container_name: i9star_app_dev
     restart: unless-stopped
     env_file:

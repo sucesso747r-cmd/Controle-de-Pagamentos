@@ -944,12 +944,7 @@ export async function registerRoutes(
     try {
       const pkg = require('../package.json');
       const version = pkg.version;
-      let commit: string;
-      try {
-        commit = execSync('git rev-parse --short HEAD', { cwd: '/opt/i9star-dev', encoding: 'utf8' }).trim();
-      } catch {
-        commit = 'unknown';
-      }
+      const commit = process.env.GIT_COMMIT || 'unknown';
       res.json({ version, commit });
     } catch (err: any) {
       res.status(500).json({ message: err.message });

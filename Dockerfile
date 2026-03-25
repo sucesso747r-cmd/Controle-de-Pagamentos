@@ -12,6 +12,9 @@ FROM node:22-alpine
 
 RUN apk add --no-cache postgresql-client
 
+ARG GIT_COMMIT=unknown
+ENV GIT_COMMIT=$GIT_COMMIT
+
 WORKDIR /usr/src/app
 
 COPY --from=builder /usr/src/app/package*.json ./
