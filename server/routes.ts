@@ -66,6 +66,14 @@ export async function registerRoutes(
   await setupAuth(app);
   registerAuthRoutes(app);
 
+  // Ensure app_config table exists (key-value store for admin overrides)
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS app_config (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    )
+  `);
+
   const existing = await storage.getServices();
   if (existing.length === 0) {
     for (const name of DEFAULT_SERVICES) {
@@ -544,27 +552,38 @@ export async function registerRoutes(
           Fornecedor: supplier.name,
           "Serviço": supplier.serviceName,
         };
+        let rowTotal = 0;
         months.forEach((m) => {
           const monthYear = `${m}${yearSuffix}`;
           const payment = userPayments.find(
             (p) => p.supplierId === supplier.id && p.monthYear === monthYear
           );
           row[`${m}${yearSuffix}`] = payment ? payment.amount : "";
+          if (payment) rowTotal += payment.amount;
         });
+        row["Total Ano"] = rowTotal || "";
         return row;
       });
 
       const totalRow: Record<string, string | number> = { Fornecedor: "TOTAL", "Serviço": "" };
+      let yearGrandTotal = 0;
       months.forEach((m) => {
         const monthYear = `${m}${yearSuffix}`;
         const total = userPayments
           .filter((p) => p.monthYear === monthYear)
           .reduce((acc, p) => acc + p.amount, 0);
         totalRow[`${m}${yearSuffix}`] = total || "";
+        yearGrandTotal += total;
       });
+      totalRow["Total Ano"] = yearGrandTotal;
       rows.push(totalRow);
 
       const ws = XLSX.utils.json_to_sheet(rows);
+
+      // Overwrite Total Ano cell in TOTAL row with SUM formula
+      const totalRowNum = rows.length + 1; // 1-indexed: +1 for header row
+      ws[`O${totalRowNum}`] = { t: "n", f: `SUM(C${totalRowNum}:N${totalRowNum})`, v: yearGrandTotal };
+
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, `Pagamentos ${year}`);
 
@@ -598,7 +617,25 @@ export async function registerRoutes(
       const emailCountResult = await db.execute(
         sql`SELECT COUNT(*) AS count FROM email_logs WHERE sent_at >= ${firstDayOfMonth}`
       );
-      const emailCount = Number(emailCountResult.rows[0].count);
+      const realEmailCount = Number(emailCountResult.rows[0].count);
+
+      const overrideResult = await db.execute(
+        sql`SELECT key, value FROM app_config WHERE key IN ('email_count_override', 'email_count_override_set_at')`
+      );
+      const overrideRow = overrideResult.rows.find((r: any) => r.key === 'email_count_override');
+      const setAtRow = overrideResult.rows.find((r: any) => r.key === 'email_count_override_set_at');
+
+      let emailCount: number;
+      if (overrideRow && overrideRow.value !== null) {
+        const baseCount = Number(overrideRow.value);
+        const setAt = setAtRow?.value ? new Date(String(setAtRow.value)) : new Date(0);
+        const newEmailsResult = await db.execute(
+          sql`SELECT COUNT(*) AS count FROM email_logs WHERE sent_at > ${setAt}`
+        );
+        emailCount = baseCount + Number(newEmailsResult.rows[0].count);
+      } else {
+        emailCount = realEmailCount;
+      }
 
       res.json({
         db: { bytes: dbSizeBytes, limitBytes: 1 * 1024 * 1024 * 1024 },
@@ -934,6 +971,58 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Backup not found" });
       }
       fs.unlinkSync(filepath);
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // GET /api/admin/email-override
+  app.get("/api/admin/email-override", isAdminSession, async (_req, res) => {
+    try {
+      const result = await db.execute(
+        sql`SELECT key, value FROM app_config WHERE key IN ('email_count_override', 'email_count_override_set_at')`
+      );
+      const overrideRow = result.rows.find((r: any) => r.key === 'email_count_override');
+      const setAtRow = result.rows.find((r: any) => r.key === 'email_count_override_set_at');
+      const override = overrideRow?.value !== null && overrideRow?.value !== undefined
+        ? Number(overrideRow.value)
+        : null;
+      const setAt = setAtRow?.value ? String(setAtRow.value) : null;
+      res.json({ override, setAt });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // POST /api/admin/email-override
+  app.post("/api/admin/email-override", isAdminSession, async (req, res) => {
+    try {
+      const count = Number(req.body.count);
+      if (isNaN(count) || count < 0) {
+        return res.status(400).json({ message: "Invalid count" });
+      }
+      const now = new Date().toISOString();
+      await db.execute(sql`
+        INSERT INTO app_config (key, value) VALUES ('email_count_override', ${String(count)})
+        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+      `);
+      await db.execute(sql`
+        INSERT INTO app_config (key, value) VALUES ('email_count_override_set_at', ${now})
+        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+      `);
+      res.json({ ok: true, setAt: now });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // DELETE /api/admin/email-override
+  app.delete("/api/admin/email-override", isAdminSession, async (_req, res) => {
+    try {
+      await db.execute(
+        sql`DELETE FROM app_config WHERE key IN ('email_count_override', 'email_count_override_set_at')`
+      );
       res.json({ ok: true });
     } catch (err: any) {
       res.status(500).json({ message: err.message });

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -50,6 +51,11 @@ export default function AdminPage() {
   const [backupLoading, setBackupLoading] = useState(false);
   const [restoreTarget, setRestoreTarget] = useState<string | null>(null);
 
+  const [emailOverride, setEmailOverride] = useState<number | null>(null);
+  const [emailOverrideSetAt, setEmailOverrideSetAt] = useState<string | null>(null);
+  const [emailOverrideInput, setEmailOverrideInput] = useState("");
+  const [emailOverrideMsg, setEmailOverrideMsg] = useState<string | null>(null);
+
   async function fetchUsers() {
     const res = await fetch("/api/admin/users");
     if (res.status === 401) {
@@ -69,9 +75,50 @@ export default function AdminPage() {
     }
   }
 
+  async function fetchEmailOverride() {
+    const res = await fetch("/api/admin/email-override");
+    if (res.ok) {
+      const data = await res.json();
+      setEmailOverride(data.override);
+      setEmailOverrideSetAt(data.setAt ?? null);
+    }
+  }
+
+  async function handleSetEmailOverride() {
+    const count = parseInt(emailOverrideInput, 10);
+    if (isNaN(count) || count < 0) {
+      setEmailOverrideMsg("Valor inválido");
+      return;
+    }
+    const res = await fetch("/api/admin/email-override", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ count }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setEmailOverride(count);
+      setEmailOverrideSetAt(data.setAt ?? null);
+      setEmailOverrideMsg(`Base definida: ${count} (emails enviados após este momento serão somados)`);
+    } else {
+      setEmailOverrideMsg("Erro ao definir override");
+    }
+  }
+
+  async function handleClearEmailOverride() {
+    const res = await fetch("/api/admin/email-override", { method: "DELETE" });
+    if (res.ok) {
+      setEmailOverride(null);
+      setEmailOverrideSetAt(null);
+      setEmailOverrideInput("");
+      setEmailOverrideMsg("Override removido — usando contagem real do mês");
+    }
+  }
+
   useEffect(() => {
     fetchUsers();
     fetchBackups();
+    fetchEmailOverride();
   }, []);
 
   async function handleLogout() {
@@ -236,6 +283,47 @@ export default function AdminPage() {
             )}
             {backups.length === 0 && (
               <p className="text-sm text-muted-foreground">Nenhum backup encontrado.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Email Counter Override */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Override — Contador de Emails (mês)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Override ativo:{" "}
+              {emailOverride !== null ? (
+                <>
+                  <span className="font-semibold text-foreground">base {emailOverride}</span>
+                  {emailOverrideSetAt && (
+                    <span> + emails após {new Date(emailOverrideSetAt).toLocaleString("pt-BR")}</span>
+                  )}
+                </>
+              ) : (
+                "Nenhum (usando contagem real do mês)"
+              )}
+            </p>
+            <div className="flex items-center gap-3 flex-wrap">
+              <Input
+                type="number"
+                min={0}
+                value={emailOverrideInput}
+                onChange={(e) => setEmailOverrideInput(e.target.value)}
+                placeholder="Novo valor"
+                className="w-40"
+              />
+              <Button onClick={handleSetEmailOverride}>Definir override</Button>
+              {emailOverride !== null && (
+                <Button variant="outline" onClick={handleClearEmailOverride}>
+                  Limpar override
+                </Button>
+              )}
+            </div>
+            {emailOverrideMsg && (
+              <p className="text-sm text-muted-foreground">{emailOverrideMsg}</p>
             )}
           </CardContent>
         </Card>

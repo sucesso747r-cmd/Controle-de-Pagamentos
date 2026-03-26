@@ -187,28 +187,14 @@ export default function DashboardPage() {
       );
     }
 
-    if (supplier.isRecurring) {
-      return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="w-full h-full flex items-center justify-center bg-[#f8d7da] text-[#721c24] font-bold cursor-pointer hover:bg-[#f5c6cb] transition-colors">
-                ?
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Clique para registrar pagamento</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
-    }
 
     return (
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="w-full h-full bg-[#f8f9fa] cursor-pointer hover:bg-[#e9ecef] transition-colors" />
+          <div className="w-full h-full flex items-center justify-center bg-[#f8d7da] text-[#721c24] font-bold cursor-pointer hover:bg-[#f5c6cb] transition-colors">
+            ?
+          </div>
           </TooltipTrigger>
           <TooltipContent>
             <p>Clique para registrar pagamento</p>
