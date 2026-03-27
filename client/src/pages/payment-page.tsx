@@ -274,14 +274,18 @@ export default function PaymentPage() {
                     <FormField control={form.control} name="monthYear" render={({ field }) => {
                       const monthPart = field.value ? field.value.replace(/\d+$/, '') : 'jan';
                       const yearSuffix = field.value ? field.value.replace(/^[a-z]+/, '') : currentYearSuffix;
-                      const yearFull = yearSuffix ? 2000 + parseInt(yearSuffix) : selectedYear;
+                      const safeYearSuffix = yearSuffix || currentYearSuffix;
+                      const yearFull = safeYearSuffix ? 2000 + parseInt(safeYearSuffix) : selectedYear;
                       const currentYear = new Date().getFullYear();
                       const years = Array.from({ length: currentYear + 1 - 2023 + 1 }, (_, i) => 2023 + i);
                       return (
                         <FormItem>
                           <FormLabel>Mês/Ano <span className="text-destructive">*</span></FormLabel>
                           <div className="flex gap-2">
-                            <Select value={monthPart} onValueChange={(month) => field.onChange(`${month}${yearSuffix}`)}>
+                            <Select value={monthPart} onValueChange={(month) => {
+                              const sy = field.value.replace(/^[a-z]+/, '') || currentYearSuffix;
+                              field.onChange(`${month}${sy}`);
+                            }}>
                               <FormControl>
                                 <SelectTrigger className="h-12" data-testid="select-month"><SelectValue placeholder="Mês" /></SelectTrigger>
                               </FormControl>
@@ -289,7 +293,10 @@ export default function PaymentPage() {
                                 {MONTHS.map((m) => (<SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>))}
                               </SelectContent>
                             </Select>
-                            <Select value={yearFull.toString()} onValueChange={(year) => field.onChange(`${monthPart}${year.slice(-2)}`)}>
+                            <Select value={yearFull.toString()} onValueChange={(year) => {
+                              const mp = field.value.replace(/\d+$/, '') || 'jan';
+                              field.onChange(`${mp}${year.slice(-2)}`);
+                            }}>
                               <FormControl>
                                 <SelectTrigger className="h-12" data-testid="select-year"><SelectValue placeholder="Ano" /></SelectTrigger>
                               </FormControl>
