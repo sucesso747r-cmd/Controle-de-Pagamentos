@@ -738,5 +738,9 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/version", (_req, res) => {
+    res.json({ commit: process.env.BUILD_COMMIT || "unknown" });
+  });
+
   return httpServer;
 }

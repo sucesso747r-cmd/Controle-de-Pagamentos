@@ -10,6 +10,9 @@ RUN npm run build
 
 FROM node:22-alpine
 
+ARG BUILD_COMMIT
+ENV BUILD_COMMIT=$BUILD_COMMIT
+
 WORKDIR /usr/src/app
 
 COPY --from=builder /usr/src/app/package*.json ./
