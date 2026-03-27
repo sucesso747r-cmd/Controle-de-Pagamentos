@@ -410,7 +410,7 @@ export async function registerRoutes(
         new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
 
       const subject = `Comprovante de ${supplier.name} ${supplier.serviceName} ${payment.monthYear}`;
-      const body = `Fornecedor: ${supplier.name}\nServiço: ${supplier.serviceName}\nValor: ${formatCurrency(payment.amount)}\nFatura e Comprovante: Ver anexos`;
+      const body = `Fornecedor: ${supplier.name}\nServiço: ${supplier.serviceName}\nValor: ${formatCurrency(payment.amount)}`;
 
       const recipients = user.destEmail.split(",").map((e: string) => e.trim()).filter(Boolean);
       const cc: string[] = [];
