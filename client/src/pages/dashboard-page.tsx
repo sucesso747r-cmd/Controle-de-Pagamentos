@@ -175,8 +175,11 @@ export default function DashboardPage() {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="w-full h-full flex items-center justify-center bg-[#d4edda] text-[#155724] text-[10px] font-semibold cursor-pointer hover:bg-[#c3e6cb] transition-colors">
+              <div className="relative w-full h-full flex items-center justify-center bg-[#d4edda] text-[#155724] text-[10px] font-semibold cursor-pointer hover:bg-[#c3e6cb] transition-colors">
                 {formatCurrency(payment.amount)}
+                {payment.emailSentAt !== null && (
+                  <Mail className="absolute bottom-1 right-1 text-emerald-600" style={{ width: 10, height: 10 }} />
+                )}
               </div>
             </TooltipTrigger>
             <TooltipContent>
