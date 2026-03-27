@@ -1,5 +1,4 @@
-version: '3.8'
-
+name: i9star-prd
 services:
   app:
     build:
@@ -8,29 +7,31 @@ services:
         BUILD_COMMIT: ${BUILD_COMMIT:-unknown}
     container_name: i9star_app_prd
     restart: always
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-      DATABASE_URL: postgres://i9star_prd_user:i9star_prd_pwd@postgres:5432/i9star_prd_db
-      APP_SECRET: prd_change_this_secret_in_production
+    env_file:
+      - .env.prd
     depends_on:
       postgres:
-        condition: service_started
+        condition: service_healthy
     ports:
-      - "3000:3000"
-
+      - "3001:3000"
+    volumes:
+      - uploads_prd:/usr/src/app/uploads
   postgres:
     image: postgres:16-alpine
     container_name: i9star_postgres_prd
     restart: always
-    environment:
-      POSTGRES_USER: i9star_prd_user
-      POSTGRES_PASSWORD: i9star_prd_pwd
-      POSTGRES_DB: i9star_prd_db
+    env_file:
+      - .env.prd
     volumes:
-      - pgdata_prd:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-
+      - i9star_prd_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 volumes:
-  pgdata_prd:
+  i9star_prd_postgres_data:
+    external: true
+    name: i9star-prd_i9star_prd_postgres_data
+  uploads_prd:
